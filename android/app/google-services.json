@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709262255399",
+    "project_id": "quran-pro--tajwid-coach",
+    "storage_bucket": "quran-pro--tajwid-coach.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709262255399:android:e24c89f33a0f011ba8b502",
+        "android_client_info": {
+          "package_name": "com.tajwidcoach.tajwid_coach"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDflme4IEb7gHvxbjVC_MFyC8Z67c4dmuc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

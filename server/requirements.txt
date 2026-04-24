@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+transformers>=4.35.0
+torch
+torchaudio
+librosa
+scipy
+numpy
+accelerate

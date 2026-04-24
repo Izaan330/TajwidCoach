@@ -1,0 +1,19 @@
+[project]
+name = "tajwidcoach-server"
+version = "0.1.0"
+description = "TajwidCoach ML Backend"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+    "pydantic",
+    "transformers",
+    "torch",
+    "librosa",
+    "scipy"
+]
+
+[tool.pyright]
+include = ["."]
+venvPath = "."
+venv = "venv"
