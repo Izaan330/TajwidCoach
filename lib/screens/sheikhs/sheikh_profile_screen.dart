@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sheikh_provider.dart';
 import 'ijazah_certificate_screen.dart';
+import '../../models/ijazah_model.dart';
 
 class SheikhProfileScreen extends StatefulWidget {
   final SheikhModel sheikh;
@@ -198,80 +199,133 @@ class _SheikhProfileScreenState extends State<SheikhProfileScreen> {
                   const SizedBox(height: 16),
 
                   // Ijazah CTA
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => IjazahCertificateScreen(sheikh: widget.sheikh),
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6A1B9A), Color(0xFF4527A0)],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Row(
-                        children: [
-                          Text('📜', style: TextStyle(fontSize: 24)),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Digital Ijazah Certificate',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                  StreamBuilder<List<IjazahCertificate>>(
+                    stream: context.read<SheikhProvider>().getStudentCertificates(auth.user?.uid ?? ''),
+                    builder: (context, snapshot) {
+                      final hasIjazah = snapshot.hasData && 
+                          snapshot.data!.any((c) => c.sheikhId == widget.sheikh.id);
+                      final IjazahCertificate? certificate = hasIjazah 
+                          ? snapshot.data!.firstWhere((c) => c.sheikhId == widget.sheikh.id)
+                          : null;
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (hasIjazah) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => IjazahCertificateScreen(certificate: certificate!),
                               ),
-                              Text(
-                                'Earn your Ijazah with this Sheikh',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('You haven\'t earned an Ijazah from this Sheikh yet.')),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: hasIjazah 
+                                ? const [Color(0xFF6A1B9A), Color(0xFF4527A0)]
+                                : [Colors.grey.shade400, Colors.grey.shade600],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: hasIjazah ? [
+                              BoxShadow(
+                                color: const Color(0xFF6A1B9A).withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ] : null,
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('📜', style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    hasIjazah ? 'View My Ijazah' : 'Digital Ijazah Certificate',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    hasIjazah ? 'Issued on ${certificate!.issuedDate.toString().split(' ')[0]}' : 'Earn your Ijazah with this Sheikh',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white70,
+                                size: 16,
                               ),
                             ],
                           ),
-                          Spacer(),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: Colors.white70,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    }
                   ),
                   const SizedBox(height: 24),
 
                   // Enroll/Book button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (widget.sheikh.isAvailable && !isAssigned && !_isEnrolling)
-                          ? _enroll
-                          : (isAssigned ? () {} : null),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: isAssigned ? AppTheme.primaryGreen : null,
-                      ),
-                      child: _isEnrolling
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : Text(
-                              isAssigned
-                                  ? 'Enrolled (Assigned)'
-                                  : (widget.sheikh.isAvailable
-                                      ? 'Enroll — ₹${widget.sheikh.pricePerSession}'
-                                      : 'Currently Unavailable'),
+                  Row(
+                    children: [
+                      if (isAssigned)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.message_rounded),
+                            label: const Text('Message'),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Messaging feature coming soon!')),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: const BorderSide(color: AppTheme.primaryGreen),
+                              foregroundColor: AppTheme.primaryGreen,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                    ),
+                          ),
+                        ),
+                      if (isAssigned) const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: (widget.sheikh.isAvailable && !isAssigned && !_isEnrolling)
+                              ? _enroll
+                              : (isAssigned ? null : null),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: isAssigned ? AppTheme.primaryGreen.withValues(alpha: 0.1) : null,
+                            foregroundColor: isAssigned ? AppTheme.primaryGreen : null,
+                            elevation: isAssigned ? 0 : null,
+                          ),
+                          child: _isEnrolling
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : Text(
+                                  isAssigned
+                                      ? 'Active Mentor'
+                                      : (widget.sheikh.isAvailable
+                                          ? 'Enroll — ₹${widget.sheikh.pricePerSession}'
+                                          : 'Currently Unavailable'),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 80),
                 ],

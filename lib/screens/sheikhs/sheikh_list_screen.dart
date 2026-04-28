@@ -24,6 +24,8 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
     'Bengaluru',
   ];
 
+  String _searchQuery = '';
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -37,9 +39,12 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
       );
     }
 
-    final filtered = _selectedCity == 'All'
-        ? sheikhs
-        : sheikhs.where((s) => s.city == _selectedCity).toList();
+    final filtered = sheikhs.where((s) {
+      final matchesCity = _selectedCity == 'All' || s.city == _selectedCity;
+      final matchesSearch = s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          s.masjid.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCity && matchesSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundCream,
@@ -59,14 +64,38 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
       ),
       body: Column(
         children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: InputDecoration(
+                hintText: 'Search by name or masjid...',
+                prefixIcon: const Icon(Icons.search, color: AppTheme.primaryGreen),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+
           if (!isSheikh)
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: _BecomeScholarCard(),
             ),
+          
           // City filter
           SizedBox(
-            height: 60,
+            height: 54,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -80,25 +109,30 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: 20,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color:
                           selected ? AppTheme.primaryGreen : AppTheme.cardWhite,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color:
-                            selected ? AppTheme.primaryGreen : AppTheme.divider,
-                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: selected ? [
+                        BoxShadow(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ] : null,
                     ),
-                    child: Text(
-                      city,
-                      style: TextStyle(
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w400,
-                        color: selected ? Colors.white : AppTheme.textPrimary,
-                        fontSize: 13,
+                    child: Center(
+                      child: Text(
+                        city,
+                        style: TextStyle(
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                          color: selected ? Colors.white : AppTheme.textPrimary,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -351,57 +385,73 @@ class _BecomeScholarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.primaryGreen.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.auto_stories, color: AppTheme.primaryGreen),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Are you a Tajwid Scholar?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(
-                      'Join our verified scholars to guide students.',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        gradient: const LinearGradient(
+          colors: [AppTheme.primaryGreen, Color(0xFF1B5E20)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SheikhOnboardingScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryGreen,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              Icons.auto_stories,
+              size: 120,
+              color: Colors.white.withValues(alpha: 0.1),
             ),
-            child: const Text('Become a Scholar'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Are you a Tajwid Scholar?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Join our verified scholars to guide students\naround the world in their Quranic journey.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SheikhOnboardingScreen()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.primaryGreen,
+                    minimumSize: const Size(160, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Become a Scholar', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../models/sheikh_model.dart';
+import '../../models/ijazah_model.dart';
+import '../../services/pdf_service.dart';
+import 'package:printing/printing.dart';
 
 class IjazahCertificateScreen extends StatelessWidget {
-  final SheikhModel sheikh;
+  final IjazahCertificate certificate;
 
-  const IjazahCertificateScreen({super.key, required this.sheikh});
+  const IjazahCertificateScreen({super.key, required this.certificate});
 
   @override
   Widget build(BuildContext context) {
@@ -16,19 +18,11 @@ class IjazahCertificateScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.share_rounded),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Certificate shared! (Implement share_plus)'),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Certificate saved to gallery!')),
+            onPressed: () async {
+              final pdfBytes = await PdfService.generateIjazahPdf(certificate);
+              await Printing.sharePdf(
+                bytes: pdfBytes,
+                filename: 'Ijazah_${certificate.studentName.replaceAll(' ', '_')}.pdf',
               );
             },
           ),
@@ -108,23 +102,14 @@ class IjazahCertificateScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'Abdullah Rahman',
-                          style: TextStyle(
+                        Text(
+                          certificate.studentName,
+                          style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.textPrimary,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'عبدالله رحمن',
-                          style: TextStyle(
-                            fontFamily: 'AmiriQuran',
-                            fontSize: 18,
-                            color: AppTheme.textSecondary,
-                          ),
-                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 20),
 
@@ -158,32 +143,23 @@ class IjazahCertificateScreen extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Column(
+                          child: Column(
                             children: [
-                              Text(
+                              const Text(
                                 'According to the narration of',
                                 style: TextStyle(
                                   color: AppTheme.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Hafs \'an \'Asim',
-                                style: TextStyle(
+                                certificate.attestation,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppTheme.primaryGreen,
                                 ),
-                              ),
-                              Text(
-                                'حفص عن عاصم',
-                                style: TextStyle(
-                                  fontFamily: 'AmiriQuran',
-                                  color: AppTheme.primaryGreen,
-                                  fontSize: 16,
-                                ),
-                                textDirection: TextDirection.rtl,
                               ),
                             ],
                           ),
@@ -208,21 +184,14 @@ class IjazahCertificateScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  sheikh.name,
+                                  certificate.sheikhName,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
                                   ),
                                 ),
                                 Text(
-                                  sheikh.masjid,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                                Text(
-                                  sheikh.city,
+                                  certificate.masjid,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.textSecondary,
@@ -242,7 +211,7 @@ class IjazahCertificateScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                                  '${certificate.issuedDate.day}/${certificate.issuedDate.month}/${certificate.issuedDate.year}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
@@ -338,16 +307,14 @@ class IjazahCertificateScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.share_rounded),
-                    label: const Text('Share'),
-                    onPressed: () {},
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Save PDF'),
-                    onPressed: () {},
+                    label: const Text('Share PDF'),
+                    onPressed: () async {
+                      final pdfBytes = await PdfService.generateIjazahPdf(certificate);
+                      await Printing.sharePdf(
+                        bytes: pdfBytes,
+                        filename: 'Ijazah_${certificate.studentName.replaceAll(' ', '_')}.pdf',
+                      );
+                    },
                   ),
                 ),
               ],

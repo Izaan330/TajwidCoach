@@ -1,10 +1,15 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../providers/streak_provider.dart';
 import 'main_navigation.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SPLASH SCREEN  (unchanged logic, same dark background as before)
+// ─────────────────────────────────────────────────────────────────────────────
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -47,8 +52,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-
-    // Navigation is now handled by AuthWrapper in app.dart
   }
 
   @override
@@ -64,10 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Premium Background
-          const _SplashBackground(),
-          
-          // 2. Main Content
+          const Positioned.fill(child: _SplashBackground()),
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -75,7 +75,6 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Glassmorphic Logo Container
                     Transform.scale(
                       scale: _scaleIn.value,
                       child: Opacity(
@@ -100,8 +99,12 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           child: Center(
                             child: ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFFFFD700), Color(0xFFE6BE8A)],
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
+                                colors: [
+                                  Color(0xFFFFD700),
+                                  Color(0xFFE6BE8A)
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ).createShader(bounds),
@@ -116,8 +119,6 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 48),
-                    
-                    // App Name & Tagline
                     Transform.translate(
                       offset: Offset(0, _slideUp.value),
                       child: Opacity(
@@ -152,7 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             const SizedBox(height: 32),
                             const Text(
-                              'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+                              'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
                               style: TextStyle(
                                 fontSize: 24,
                                 color: Color(0xFFFFD700),
@@ -166,8 +167,6 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 64),
-                    
-                    // Streak Banner (Premium Style)
                     if (streak > 0)
                       Transform.translate(
                         offset: Offset(0, _slideUp.value + 20),
@@ -175,12 +174,13 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _fadeIn.value,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
+                                horizontal: 24, vertical: 12),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                                colors: [
+                                  Color(0xFF2E7D32),
+                                  Color(0xFF1B5E20)
+                                ],
                               ),
                               borderRadius: BorderRadius.circular(30),
                               boxShadow: const [
@@ -194,7 +194,8 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🔥', style: TextStyle(fontSize: 22)),
+                                const Text('🔥',
+                                    style: TextStyle(fontSize: 22)),
                                 const SizedBox(width: 12),
                                 Text(
                                   '$streak-DAY STREAK!',
@@ -215,8 +216,6 @@ class _SplashScreenState extends State<SplashScreen>
               );
             },
           ),
-          
-          // 3. Bottom Credits
           const Positioned(
             bottom: 40,
             left: 0,
@@ -255,8 +254,8 @@ class _SplashBackground extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF004D40), // Dark Teal
-            Color(0xFF00251A), // Near Black Teal
+            Color(0xFF004D40),
+            Color(0xFF00251A),
           ],
         ),
       ),
@@ -283,18 +282,18 @@ class _IslamicPatternPainter extends CustomPainter {
     }
   }
 
-  void _drawEightPointStar(Canvas canvas, Offset center, double radius, Paint paint) {
-    // Draw two overlapping squares rotated 45 degrees
+  void _drawEightPointStar(
+      Canvas canvas, Offset center, double radius, Paint paint) {
     final path1 = Path();
     path1.addRect(Rect.fromCircle(center: center, radius: radius * 0.7));
-    
+
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    canvas.rotate(0.785398); // 45 degrees
+    canvas.rotate(0.785398);
     canvas.translate(-center.dx, -center.dy);
     canvas.drawPath(path1, paint);
     canvas.restore();
-    
+
     canvas.drawPath(path1, paint);
   }
 
@@ -302,6 +301,9 @@ class _IslamicPatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ONBOARDING SCREEN  (premium dark immersive redesign)
+// ─────────────────────────────────────────────────────────────────────────────
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -309,9 +311,13 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  late final AnimationController _ctaPulseController;
+  late final AnimationController _bgOrbitController;
 
   static const List<_OnboardingPage> _pages = [
     _OnboardingPage(
@@ -321,6 +327,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       description:
           'Your AI-powered companion for perfecting Quran recitation. Our system detects 25+ Tajwid rules in real-time.',
       color: AppTheme.primaryGreen,
+      bgColor: Color(0xFF002416),
     ),
     _OnboardingPage(
       emoji: '🔥',
@@ -329,6 +336,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       description:
           'Earn badges for consistent practice. 7-day 🔥, 30-day 🌟, 100-day 🕌, 365-day 👑. Don\'t break your streak!',
       color: AppTheme.accentAmber,
+      bgColor: Color(0xFF1C0E00),
     ),
     _OnboardingPage(
       emoji: '👨‍🏫',
@@ -336,132 +344,255 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       subtitle: 'Verified Islamic Scholars',
       description:
           'Connect with certified Sheikhs for live corrections and earn your digital Ijazah certificate.',
-      color: Color(0xFF6A1B9A),
+      color: Color(0xFFCE93D8),
+      bgColor: Color(0xFF150A1F),
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _ctaPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _bgOrbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctaPulseController.dispose();
+    _bgOrbitController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _complete() async {
+    HapticFeedback.mediumImpact();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenOnboarding', true);
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, anim, __) => const MainNavigation(),
+          transitionsBuilder: (_, anim, __, child) => FadeTransition(
+            opacity: anim,
+            child: child,
+          ),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final page = _pages[_currentPage];
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundCream,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                itemCount: _pages.length,
-                itemBuilder: (context, index) => _buildPage(_pages[index]),
-              ),
-            ),
-            // Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _pages.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: i == _currentPage ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i == _currentPage
-                        ? AppTheme.primaryGreen
-                        : AppTheme.textHint,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+      backgroundColor: AppTheme.backgroundDark,
+      body: Stack(
+        children: [
+          // ─── Animated radial orbit background ──────────────────────────
+          AnimatedBuilder(
+            animation: _bgOrbitController,
+            builder: (context, _) {
+              return CustomPaint(
+                painter: _OrbitPainter(
+                  angle: _bgOrbitController.value * 2 * math.pi,
+                  color: page.color,
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // CTA Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (_currentPage < _pages.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('hasSeenOnboarding', true);
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (_) => const MainNavigation(),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: Text(
-                    _currentPage < _pages.length - 1
-                        ? 'Next'
-                        : 'Get Started — بسم الله',
-                  ),
+                size: Size.infinite,
+              );
+            },
+          ),
+
+          // ─── Skip button top-right ──────────────────────────────────────
+          if (_currentPage < _pages.length - 1)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 20,
+              child: TextButton(
+                onPressed: _complete,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
-              ),
-            ),
-            if (_currentPage < _pages.length - 1)
-              TextButton(
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('hasSeenOnboarding', true);
-                  if (context.mounted) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const MainNavigation()),
-                    );
-                  }
-                },
                 child: const Text('Skip'),
               ),
-            const SizedBox(height: 16),
-          ],
-        ),
+            ),
+
+          // ─── Main content ───────────────────────────────────────────────
+          SafeArea(
+            child: Column(
+              children: [
+                // Segmented progress bar
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: _SegmentedProgressBar(
+                    total: _pages.length,
+                    current: _currentPage,
+                    color: page.color,
+                  ),
+                ),
+
+                // Pages
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (i) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _currentPage = i);
+                    },
+                    itemCount: _pages.length,
+                    itemBuilder: (context, index) =>
+                        _buildPage(_pages[index]),
+                  ),
+                ),
+
+                // CTA Button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: AnimatedBuilder(
+                    animation: _ctaPulseController,
+                    builder: (context, child) {
+                      final glowOpacity =
+                          0.2 + 0.2 * _ctaPulseController.value;
+                      final scale =
+                          1.0 + 0.02 * _ctaPulseController.value;
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: page.color
+                                    .withValues(alpha: glowOpacity),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_currentPage < _pages.length - 1) {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOutCubic,
+                            );
+                          } else {
+                            await _complete();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: page.color,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _currentPage < _pages.length - 1
+                              ? 'Continue →'
+                              : 'Get Started — بسم الله',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPage(_OnboardingPage page) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Glowing emoji orb
           Container(
-            width: 120,
-            height: 120,
+            width: 150,
+            height: 150,
             decoration: BoxDecoration(
-              color: page.color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  page.color.withValues(alpha: 0.25),
+                  page.color.withValues(alpha: 0.05),
+                  Colors.transparent,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: page.color.withValues(alpha: 0.2),
+                  blurRadius: 50,
+                  spreadRadius: 10,
+                ),
+              ],
             ),
             child: Center(
-              child: Text(page.emoji, style: const TextStyle(fontSize: 56)),
+              child: Text(
+                page.emoji,
+                style: const TextStyle(fontSize: 70),
+              ),
             ),
           ),
-          const SizedBox(height: 40),
-          Text(
-            page.subtitle,
-            style: TextStyle(
-              color: page.color,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+          const SizedBox(height: 48),
+
+          // Subtitle tag
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: page.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: page.color.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              page.subtitle.toUpperCase(),
+              style: TextStyle(
+                color: page.color,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+
           Text(
             page.title,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 30,
               fontWeight: FontWeight.w800,
               color: AppTheme.textPrimary,
+              letterSpacing: -0.5,
+              height: 1.1,
             ),
           ),
           const SizedBox(height: 16),
@@ -469,9 +600,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             page.description,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 15,
               color: AppTheme.textSecondary,
-              height: 1.5,
+              height: 1.6,
             ),
           ),
         ],
@@ -480,12 +611,99 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
+// ─── Segmented Progress Bar ────────────────────────────────────────────────
+class _SegmentedProgressBar extends StatelessWidget {
+  final int total;
+  final int current;
+  final Color color;
+
+  const _SegmentedProgressBar({
+    required this.total,
+    required this.current,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(total, (i) {
+        final isActive = i <= current;
+        return Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+            height: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? color
+                  : AppTheme.textHint.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                      )
+                    ]
+                  : [],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ─── Orbiting background particles painter ────────────────────────────────
+class _OrbitPainter extends CustomPainter {
+  final double angle;
+  final Color color;
+
+  const _OrbitPainter({required this.angle, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height * 0.3;
+    final r = size.width * 0.45;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Three concentric subtle rings
+    canvas.drawCircle(Offset(cx, cy), r * 0.5, paint);
+    canvas.drawCircle(Offset(cx, cy), r * 0.75, paint);
+    canvas.drawCircle(Offset(cx, cy), r, paint);
+
+    // Orbiting dots
+    final dotPaint = Paint()
+      ..color = color.withValues(alpha: 0.35)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 3; i++) {
+      final a = angle + (i * 2 * math.pi / 3);
+      final dx = cx + r * 0.75 * math.cos(a);
+      final dy = cy + r * 0.75 * math.sin(a);
+      canvas.drawCircle(Offset(dx, dy), 3.5, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_OrbitPainter old) =>
+      old.angle != angle || old.color != color;
+}
+
+// ─── Data model ───────────────────────────────────────────────────────────
 class _OnboardingPage {
   final String emoji;
   final String title;
   final String subtitle;
   final String description;
   final Color color;
+  final Color bgColor;
 
   const _OnboardingPage({
     required this.emoji,
@@ -493,6 +711,6 @@ class _OnboardingPage {
     required this.subtitle,
     required this.description,
     required this.color,
+    required this.bgColor,
   });
 }
-

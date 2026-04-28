@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/tajweed_engine.dart';
 import '../models/tajwid_rule_model.dart';
 import '../utils/tajweed_tag_parser.dart';
+import '../theme/app_theme.dart';
 
 /// Renders Arabic Quran text with color-coded Tajweed rule highlighting.
 /// When [showTajweed] is false, renders plain text identically to a regular Text widget.
@@ -113,7 +114,7 @@ class TajweedText extends StatelessWidget {
           fontFamily: fontFamily,
           fontSize: fontSize,
           height: lineHeight,
-          color: Colors.black87,
+          color: AppTheme.textPrimary,
         ),
       );
     }
@@ -269,7 +270,7 @@ class _TajweedLegendState extends State<TajweedLegend> {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      color: Colors.white,
+      color: AppTheme.backgroundSurface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -280,14 +281,14 @@ class _TajweedLegendState extends State<TajweedLegend> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.palette_rounded, size: 18, color: Color(0xFF4CAF50)),
+                  const Icon(Icons.palette_rounded, size: 18, color: AppTheme.primaryGreen),
                   const SizedBox(width: 8),
                   const Text(
                     'Tajweed Color Guide',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E7D32),
+                      color: AppTheme.primaryGreen,
                     ),
                   ),
                   const Spacer(),

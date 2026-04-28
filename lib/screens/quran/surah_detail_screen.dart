@@ -37,7 +37,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   double _playbackSpeed = 1.0;
   late PageController _pageController;
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   bool _hasScrolled = false;
 
   @override
@@ -56,11 +57,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   void _scrollToAyah(int ayahNumber) {
     if (!_itemScrollController.isAttached) return;
-    
+
     // We add 1 for headers (Speed bar + Bismillah)
     final hasBismillah = widget.surah.number != 9 && widget.surah.number != 1;
     final indexOffset = hasBismillah ? 2 : 1;
-    
+
     _itemScrollController.scrollTo(
       index: (ayahNumber - 1) + indexOffset,
       duration: const Duration(milliseconds: 600),
@@ -78,10 +79,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     } else {
       quranProvider.goToSurah(widget.surah.number);
     }
-    
+
     // Track Last Read immediately on entry
     quranProvider.updateLastRead(
-      widget.surah, 
+      widget.surah,
       pageNumber: widget.initialPage ?? quranProvider.currentPage,
       scriptMode: settings.quranScript.name,
     );
@@ -146,17 +147,20 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       // Text Modes (Indo-Pak / Tajweed Text)
       final positions = _itemPositionsListener.itemPositions.value;
       if (positions.isNotEmpty) {
-        final hasBismillah = widget.surah.number != 9 && widget.surah.number != 1;
+        final hasBismillah =
+            widget.surah.number != 9 && widget.surah.number != 1;
         final indexOffset = hasBismillah ? 2 : 1;
-        
+
         final sortedPositions = positions.toList()
           ..sort((a, b) => a.index.compareTo(b.index));
-        
+
         final topPosition = sortedPositions.firstWhere(
           (p) => p.index >= indexOffset && p.itemLeadingEdge <= 0.1,
-          orElse: () => sortedPositions.firstWhere((p) => p.index >= indexOffset, orElse: () => sortedPositions.first),
+          orElse: () => sortedPositions.firstWhere(
+              (p) => p.index >= indexOffset,
+              orElse: () => sortedPositions.first),
         );
-        
+
         if (topPosition.index >= indexOffset) {
           final ayahNumber = (topPosition.index - indexOffset) + 1;
           quranProvider.updateLastRead(
@@ -182,7 +186,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           content: const Text('Last read position saved!'),
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           backgroundColor: AppTheme.primaryGreen,
         ),
       );
@@ -195,65 +200,70 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     final settings = context.watch<SettingsProvider>();
     final ayahs = quranProvider.currentAyahs;
     final isLoading = quranProvider.isLoading;
-    
+
     // Handle initial scroll after loading
     if (!isLoading && widget.initialAyah != null && !_hasScrolled) {
       _hasScrolled = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-         _scrollToAyah(widget.initialAyah!);
+        _scrollToAyah(widget.initialAyah!);
       });
     }
     final script = settings.quranScript;
 
-    final isFullScreenMode = script == QuranScript.mushaf || script == QuranScript.tajweed;
+    final isFullScreenMode =
+        script == QuranScript.mushaf || script == QuranScript.tajweed;
     final showAppBar = !isFullScreenMode || (quranProvider.isUIVisible);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundMid,
       extendBodyBehindAppBar: isFullScreenMode,
-      appBar: showAppBar 
-        ? AppBar(
-            toolbarHeight: 82, // More space for 2-line title with Arabic font
-            backgroundColor: isFullScreenMode ? Colors.white.withValues(alpha: 0.8) : null,
-            foregroundColor: isFullScreenMode ? AppTheme.textPrimary : null,
-            elevation: 0,
-            title: Column(
-              children: [
-                Text(
-                  widget.surah.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                ),
-                Text(
-                  widget.surah.arabicName,
-                  style: const TextStyle(
-                    fontSize: 16, // Slightly larger for better readability
-                    fontFamily: 'AmiriQuran',
-                    height: 1.4, // Essential to prevent clipping of tall Alifs/diacritics
-                    color: AppTheme.primaryGreen,
+      appBar: showAppBar
+          ? AppBar(
+              toolbarHeight: 82, // More space for 2-line title with Arabic font
+              backgroundColor: isFullScreenMode
+                  ? AppTheme.backgroundMid.withValues(alpha: 0.8)
+                  : null,
+              foregroundColor: isFullScreenMode ? AppTheme.textPrimary : null,
+              elevation: 0,
+              title: Column(
+                children: [
+                  Text(
+                    widget.surah.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 16),
                   ),
-                  textDirection: TextDirection.rtl,
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.bookmark_add_outlined),
-                tooltip: 'Save Position',
-                onPressed: _manualSaveLastRead,
+                  Text(
+                    widget.surah.arabicName,
+                    style: const TextStyle(
+                      fontSize: 16, // Slightly larger for better readability
+                      fontFamily: 'AmiriQuran',
+                      height:
+                          1.4, // Essential to prevent clipping of tall Alifs/diacritics
+                      color: AppTheme.primaryGreen,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
               ),
-              if (!isFullScreenMode)
+              actions: [
                 IconButton(
-                  icon: const Icon(Icons.mic_rounded),
-                  color: AppTheme.accentAmber,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PracticeScreen(surah: widget.surah),
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  tooltip: 'Save Position',
+                  onPressed: _manualSaveLastRead,
+                ),
+                if (!isFullScreenMode)
+                  IconButton(
+                    icon: const Icon(Icons.mic_rounded),
+                    color: AppTheme.accentAmber,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PracticeScreen(surah: widget.surah),
+                      ),
                     ),
                   ),
-                ),
-            ],
-          )
-        : null,
+              ],
+            )
+          : null,
       body: _buildBody(script, ayahs, isLoading, quranProvider, settings),
     );
   }
@@ -287,21 +297,23 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           currentScript: script,
           onSelect: settings.setQuranScript,
         ),
-        
+
         // Ayah list with scrollable headers
         Expanded(
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+                  child:
+                      CircularProgressIndicator(color: AppTheme.primaryGreen),
                 )
               : ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: ayahs.length + headerCount,
                   itemBuilder: (context, index) {
                     int sectionIndex = index;
-                    
+
                     // Header 1: Bismillah
                     if (hasBismillah) {
                       if (index == 0) {
@@ -312,7 +324,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       }
                       sectionIndex--;
                     }
-                    
+
                     // Header 2: Speed Bar
                     if (sectionIndex == 0) {
                       return Padding(
@@ -326,7 +338,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         ),
                       );
                     }
-                    
+
                     // Ayahs
                     final ayah = ayahs[sectionIndex - 1];
                     return _AyahCard(
@@ -374,10 +386,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   Widget _buildBismillah(SettingsProvider settings) {
     final isIndoPak = settings.quranScript == QuranScript.indoPak;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
-        vertical: isIndoPak ? 16 : 24, 
+        vertical: isIndoPak ? 16 : 24,
         horizontal: 16,
       ),
       width: double.infinity,
@@ -499,28 +511,30 @@ class _FullPageViewerState extends State<_FullPageViewer> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: PageView.builder(
-                controller: PageController(initialPage: _tajweedViewIndex ?? ((_currentPage - 1) + 9)),
+                controller: PageController(
+                    initialPage: _tajweedViewIndex ?? ((_currentPage - 1) + 9)),
                 reverse: true, // Read right-to-left
                 itemCount: 624,
                 onPageChanged: (index) {
                   int mushafEquivalentPage = index - 8;
                   if (mushafEquivalentPage < 1) mushafEquivalentPage = 1;
                   if (mushafEquivalentPage > 604) mushafEquivalentPage = 604;
-                  
+
                   setState(() {
                     _tajweedViewIndex = index;
                     _currentPage = mushafEquivalentPage;
                   });
                   widget.onPageChanged(mushafEquivalentPage);
-                  
+
                   // Update Last Read on page change
-                  final currentSurah = context.read<QuranProvider>().currentSurah;
+                  final currentSurah =
+                      context.read<QuranProvider>().currentSurah;
                   if (currentSurah != null) {
                     context.read<QuranProvider>().updateLastRead(
-                      currentSurah,
-                      pageNumber: mushafEquivalentPage,
-                      scriptMode: settings.quranScript.name,
-                    );
+                          currentSurah,
+                          pageNumber: mushafEquivalentPage,
+                          scriptMode: settings.quranScript.name,
+                        );
                   }
                 },
                 itemBuilder: (context, index) {
@@ -546,16 +560,18 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color:
+                                  AppTheme.primaryGreen.withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          "surah${suraNumber.toString().padLeft(3, '0')}", 
+                          "surah${suraNumber.toString().padLeft(3, '0')}",
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontFamily: 'surahname', 
+                            fontFamily: 'surahname',
                             package: 'qcf_quran',
                             fontSize: 32,
-                            color: AppTheme.textPrimary,
+                            color: Colors.black87,
                           ),
                         ),
                       );
@@ -564,18 +580,20 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                   onPageChanged: (page) {
                     setState(() {
                       _currentPage = page;
-                      _tajweedViewIndex = (page - 1) + 9; // Match original indexing
+                      _tajweedViewIndex =
+                          (page - 1) + 9; // Match original indexing
                     });
                     widget.onPageChanged(page);
 
                     // Update Last Read
-                    final currentSurah = context.read<QuranProvider>().currentSurah;
+                    final currentSurah =
+                        context.read<QuranProvider>().currentSurah;
                     if (currentSurah != null) {
                       context.read<QuranProvider>().updateLastRead(
-                        currentSurah,
-                        pageNumber: page,
-                        scriptMode: settings.quranScript.name,
-                      );
+                            currentSurah,
+                            pageNumber: page,
+                            scriptMode: settings.quranScript.name,
+                          );
                     }
                   },
                 ),
@@ -595,8 +613,8 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.white.withValues(alpha: 0.95),
+                    AppTheme.backgroundMid.withValues(alpha: 0.0),
+                    AppTheme.backgroundMid.withValues(alpha: 0.95),
                   ],
                 ),
               ),
@@ -611,7 +629,8 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                   const SizedBox(height: 12),
                   // Page number indicator
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(20),
@@ -721,7 +740,9 @@ class _AyahCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: isPlaying ? const Color(0xFFF7FAF2) : Colors.white,
+        color: isPlaying
+            ? AppTheme.primaryGreen.withValues(alpha: 0.1)
+            : AppTheme.backgroundSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPlaying
@@ -733,7 +754,7 @@ class _AyahCard extends StatelessWidget {
           BoxShadow(
             color: isPlaying
                 ? AppTheme.primaryGreen.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.04),
+                : Colors.black.withValues(alpha: 0.15),
             blurRadius: isPlaying ? 16 : 10,
             offset: isPlaying ? const Offset(0, 6) : const Offset(0, 4),
           ),
@@ -800,16 +821,16 @@ class _AyahCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFBFBFB),
+                      color: AppTheme.backgroundMid,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Colors.grey.withValues(alpha: 0.05)),
+                          color: Colors.white.withValues(alpha: 0.05)),
                     ),
                     child: Text(
                       ayah.translationText,
                       style: GoogleFonts.inter(
                         fontSize: 15,
-                        color: const Color(0xFF333333),
+                        color: AppTheme.textSecondary,
                         height: 1.6,
                       ),
                       textDirection: TextDirection.ltr,

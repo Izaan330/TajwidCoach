@@ -30,6 +30,11 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sheikhProvider = context.watch<SheikhProvider>();
+    final currentSheikh = sheikhProvider.currentSheikh;
+    final pendingCount = sheikhProvider.pendingReviews.length;
+    final studentCount = sheikhProvider.myStudentUids.length;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -37,25 +42,129 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
         appBar: AppBar(
           title: const Text('Sheikh Dashboard'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => context.read<AuthProvider>().signOut(),
+            if (currentSheikh != null)
+              Row(
+                children: [
+                  Text(
+                    currentSheikh.isAvailable ? 'Online' : 'Offline',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: currentSheikh.isAvailable
+                          ? AppTheme.primaryGreen
+                          : AppTheme.textHint,
+                    ),
+                  ),
+                  Switch(
+                    value: currentSheikh.isAvailable,
+                    activeThumbColor: AppTheme.primaryGreen,
+                    onChanged: (val) {
+                      sheikhProvider.toggleAvailability(currentSheikh.id, val);
+                    },
+                  ),
+                ],
+              ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (value) {
+                if (value == 'logout') {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Sign Out'),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.read<AuthProvider>().signOut();
+                          },
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('Sign Out'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text('Sign Out', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
-          bottom: const TabBar(
-            labelColor: AppTheme.primaryGreen,
-            unselectedLabelColor: AppTheme.textHint,
-            indicatorColor: AppTheme.primaryGreen,
-            tabs: [
-              Tab(text: 'Pending Reviews'),
-              Tab(text: 'My Students'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(120),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      _StatItem(label: 'Pending', value: '$pendingCount', color: Colors.orange),
+                      const SizedBox(width: 12),
+                      _StatItem(label: 'Students', value: '$studentCount', color: AppTheme.primaryGreen),
+                      const SizedBox(width: 12),
+                      const _StatItem(label: 'Earnings', value: '₹0', color: AppTheme.accentAmber),
+                    ],
+                  ),
+                ),
+                const TabBar(
+                  labelColor: AppTheme.primaryGreen,
+                  unselectedLabelColor: AppTheme.textHint,
+                  indicatorColor: AppTheme.primaryGreen,
+                  tabs: [
+                    Tab(text: 'Pending Reviews'),
+                    Tab(text: 'My Students'),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         body: const TabBarView(children: [
           _PendingReviewsTab(),
           _MyStudentsTab(),
         ]),
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _StatItem({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+          ],
+        ),
       ),
     );
   }

@@ -652,7 +652,7 @@ class _MasteryCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               rule.name,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w800,
@@ -945,7 +945,7 @@ class _BadgesTab extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.64,
+        childAspectRatio: 0.5,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -976,8 +976,9 @@ class _BadgesTab extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
+                const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -990,7 +991,7 @@ class _BadgesTab extends StatelessWidget {
                       Text(
                         badge.emoji,
                         style: TextStyle(
-                          fontSize: 42,
+                          fontSize: 40,
                           color: earned ? null : Colors.grey.withValues(alpha: 0.3),
                         ),
                       ),
@@ -1006,19 +1007,20 @@ class _BadgesTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(
                   badge.name,
                   textAlign: TextAlign.center,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     color: earned ? AppTheme.textPrimary : AppTheme.textHint,
+                    height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
@@ -1035,15 +1037,15 @@ class _BadgesTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 Expanded(
                   child: Text(
                     badge.description,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
+                      fontSize: 9.5,
                       color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                      height: 1.4,
+                      height: 1.2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

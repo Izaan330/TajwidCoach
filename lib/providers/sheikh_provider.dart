@@ -15,9 +15,11 @@ class SheikhProvider extends ChangeNotifier {
   List<RecordingModel> _pendingReviews = [];
   List<String> _myStudentUids = [];
   final Map<String, UserModel> _studentProfiles = {};
+  SheikhModel? _currentSheikh;
   bool _isLoading = false;
 
   List<SheikhModel> get availableSheikhs => _availableSheikhs;
+  SheikhModel? get currentSheikh => _currentSheikh;
   List<RecordingModel> get pendingReviews => _pendingReviews;
   List<String> get myStudentUids => _myStudentUids;
   List<UserModel> get myStudents => 
@@ -45,10 +47,24 @@ class SheikhProvider extends ChangeNotifier {
 
   /// Listen for pending reviews if the current user is a sheikh.
   void listenToPendingReviews(String sheikhId) {
+    // Also fetch current sheikh data
+    _fetchCurrentSheikh(sheikhId);
     _service.getPendingReviews(sheikhId).listen((recordings) {
       _pendingReviews = recordings;
       notifyListeners();
     });
+  }
+
+  Future<void> _fetchCurrentSheikh(String sheikhId) async {
+    try {
+      final doc = await _firestore.collection('sheikhs').doc(sheikhId).get();
+      if (doc.exists) {
+        _currentSheikh = SheikhModel.fromMap(doc.data()!);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching current sheikh: $e');
+    }
   }
 
   /// Listen for assigned students and fetch their profiles.
@@ -84,6 +100,37 @@ class SheikhProvider extends ChangeNotifier {
 
   Future<void> submitRequest(RecordingModel recording) async {
     await _service.submitRecording(recording);
+  }
+
+  Future<void> toggleAvailability(String sheikhId, bool isAvailable) async {
+    try {
+      await _firestore.collection('sheikhs').doc(sheikhId).update({
+        'isAvailable': isAvailable,
+      });
+      
+      // Update local state if the sheikh is in the current list
+      final index = _availableSheikhs.indexWhere((s) => s.id == sheikhId);
+      if (index != -1) {
+        final updated = SheikhModel.fromMap({
+          ..._availableSheikhs[index].toMap(),
+          'isAvailable': isAvailable,
+        });
+        _availableSheikhs[index] = updated;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error toggling availability: $e');
+    }
+  }
+
+  Stream<List<IjazahCertificate>> getStudentCertificates(String userId) {
+    return _firestore
+        .collection('certificates')
+        .where('studentId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => IjazahCertificate.fromMap(doc.data()))
+            .toList());
   }
 
   Future<void> enrollWithSheikh(String userId, String sheikhId) async {

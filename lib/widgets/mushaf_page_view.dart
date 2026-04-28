@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/mushaf_service.dart';
+import '../theme/app_theme.dart';
 
 class MushafPageView extends StatelessWidget {
   final int pageNumber;
@@ -56,7 +57,7 @@ class MushafPageView extends StatelessWidget {
     }
 
     return Container(
-      color: Colors.white,
+      color: AppTheme.backgroundMid,
       child: content,
     );
   }

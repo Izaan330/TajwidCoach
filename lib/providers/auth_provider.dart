@@ -289,4 +289,20 @@ class AuthProvider extends ChangeNotifier {
     _user = updated;
     notifyListeners();
   }
+
+  /// Force-refreshes the user document from Firestore.
+  /// Call this after role upgrades (e.g., becoming a sheikh) to guarantee
+  /// the local state reflects the server state immediately.
+  Future<void> refreshUserFromFirestore() async {
+    if (_user == null || _firestore == null) return;
+    try {
+      final doc = await _firestore!.collection('users').doc(_user!.uid).get();
+      if (doc.exists) {
+        _user = UserModel.fromMap(doc.data()!);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error refreshing user: $e');
+    }
+  }
 }
