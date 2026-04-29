@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
+import '../main_navigation.dart';
 import '../../models/sheikh_model.dart';
 
 class SheikhOnboardingScreen extends StatefulWidget {
@@ -130,9 +132,9 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
               ],
             ),
           ),
-          _buildBottomNav(),
         ],
       ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -281,7 +283,7 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
           ),
           const SizedBox(height: 28),
           const Text(
-            'Join as a Tajwid Scholar',
+            'Join as a Tajwid Sheikh',
             style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -554,7 +556,7 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
           ),
           const SizedBox(height: 24),
           ...[
-            ('Scholar Name', _englishNameController.text, Icons.person_rounded),
+            ('Sheikh Name', _englishNameController.text, Icons.person_rounded),
             ('Phone', _phoneController.text, Icons.phone_rounded),
             ('Bio', _bioController.text, Icons.notes_rounded),
             ('Masjid', _masjidController.text, Icons.account_balance_rounded),
@@ -623,51 +625,50 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
     final authProvider = context.watch<AuthProvider>();
     return Container(
       padding: EdgeInsets.fromLTRB(
-          20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+          20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
       decoration: const BoxDecoration(
         color: AppTheme.backgroundSurface,
         border: Border(top: BorderSide(color: AppTheme.divider)),
       ),
-      child: SizedBox(
+      child: Container(
         width: double.infinity,
-        height: 54,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: authProvider.isLoading ? null : AppTheme.greenGradient,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: authProvider.isLoading
-                ? []
-                : [
-                    BoxShadow(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
-          child: ElevatedButton(
-            onPressed: authProvider.isLoading ? null : _goNext,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-            child: authProvider.isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: AppTheme.primaryGreen),
-                  )
-                : Text(
-                    _currentPage == 5 ? 'Complete ✓' : 'Next →',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800),
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: authProvider.isLoading ? null : AppTheme.greenGradient,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: authProvider.isLoading
+              ? []
+              : [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
+                ],
+        ),
+        child: ElevatedButton(
+          onPressed: authProvider.isLoading ? null : _goNext,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
           ),
+          child: authProvider.isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppTheme.primaryGreen),
+                )
+              : Text(
+                  _currentPage == 5 ? 'Complete ✓' : 'Next →',
+                  style: GoogleFonts.outfit(
+                      fontSize: 17, fontWeight: FontWeight.w800),
+                ),
         ),
       ),
     );
@@ -754,7 +755,7 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
 
     final sheikhData = SheikhModel(
       id: user.uid,
-      name: user.name,
+      name: _englishNameController.text.trim(),
       englishName: _englishNameController.text.trim(),
       phone: _phoneController.text.trim(),
       email: user.email ?? '',
@@ -765,7 +766,7 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
       pricePerSession: int.tryParse(_priceController.text) ?? 0,
       offersGroupClasses: _offersGroupClasses,
       groupClassSize: int.tryParse(_groupSizeController.text) ?? 5,
-      isVerified: true,
+      isVerified: false,
       isAvailable: true,
     );
 
@@ -783,8 +784,14 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
       return;
     }
 
-    await auth.refreshUserFromFirestore();
+
     if (!mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    
+    // Use pushAndRemoveUntil to ensure the whole app rebuilds from the root.
+    // This is more robust when the root widget switches types (Student to Sheikh).
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MainNavigation()),
+      (route) => false,
+    );
   }
 }

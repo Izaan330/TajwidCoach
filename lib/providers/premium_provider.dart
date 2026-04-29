@@ -148,7 +148,7 @@ class PremiumProvider extends ChangeNotifier {
       name: 'Sheikh Pro',
       price: '₹999',
       period: '/month',
-      description: 'For verified scholars',
+      description: 'For verified Sheikhs',
       features: [
         'Unlimited students',
         'Sheikh dashboard',
@@ -177,31 +177,35 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final offerings = await Purchases.getOfferings();
-      if (offerings.current != null) {
-        // Real purchase path using offerings
-        final package = offerings.current!.availablePackages.firstWhere(
-          (pkg) => pkg.storeProduct.identifier == planId,
-          orElse: () => offerings.current!.availablePackages.first,
-        );
-        
-        final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
-        _updateFromCustomerInfo(purchaseResult.customerInfo);
+      // If we're using placeholder keys, skip RevenueCat and go to mock
+      if (_appleApiKey == 'appl_api_key_here' || _googleApiKey == 'goog_api_key_here') {
+        await Future.delayed(const Duration(seconds: 1));
+        _isPremium = true;
+        _currentPlan = planId;
       } else {
-        // Fallback for demo/dev if offerings not set up
-        final products = await Purchases.getProducts([planId]);
-        if (products.isNotEmpty) {
-          final purchaseResult = await Purchases.purchase(PurchaseParams.storeProduct(products.first));
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null) {
+          final package = offerings.current!.availablePackages.firstWhere(
+            (pkg) => pkg.storeProduct.identifier == planId,
+            orElse: () => offerings.current!.availablePackages.first,
+          );
+          final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
           _updateFromCustomerInfo(purchaseResult.customerInfo);
         } else {
-          // Final mock fallback
-          await Future.delayed(const Duration(seconds: 2));
-          _isPremium = true;
-          _currentPlan = planId;
+          final products = await Purchases.getProducts([planId]);
+          if (products.isNotEmpty) {
+            final purchaseResult = await Purchases.purchase(PurchaseParams.storeProduct(products.first));
+            _updateFromCustomerInfo(purchaseResult.customerInfo);
+          }
         }
       }
     } catch (e) {
       debugPrint('Purchase error: $e');
+      // Even on error, if in dev mode, we can mock it
+      if (_appleApiKey == 'appl_api_key_here' || _googleApiKey == 'goog_api_key_here') {
+        _isPremium = true;
+        _currentPlan = planId;
+      }
     }
 
     _isLoading = false;

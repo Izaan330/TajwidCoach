@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 
@@ -15,8 +16,16 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen>
     with TickerProviderStateMixin {
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _nameController = TextEditingController();
   final _smsController = TextEditingController();
   bool _codeSent = false;
+  bool _isEmailAuth = true; // Default to email auth
+  bool _isSignUp = false;
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   late final AnimationController _fadeController;
   late final AnimationController _slideController;
@@ -55,6 +64,10 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
     _smsController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
@@ -65,17 +78,38 @@ class _AuthScreenState extends State<AuthScreen>
     HapticFeedback.mediumImpact();
     final auth = context.read<AuthProvider>();
 
-    if (_codeSent) {
-      await auth.signInWithSmsCode(_smsController.text.trim());
+    if (_isEmailAuth) {
+      if (_isSignUp) {
+        if (_passwordController.text != _confirmPasswordController.text) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Passwords do not match'),
+            backgroundColor: AppTheme.qalqalahRed,
+          ));
+          return;
+        }
+        await auth.signUp(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          _nameController.text.trim(),
+        );
+      } else {
+        await auth.signIn(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
+      }
     } else {
-      await auth.verifyPhoneNumber(_phoneController.text.trim());
-      if (auth.error == null && mounted) {
-        // Animate transition to OTP view
-        _fadeController.reset();
-        _slideController.reset();
-        setState(() => _codeSent = true);
-        _fadeController.forward();
-        _slideController.forward();
+      if (_codeSent) {
+        await auth.signInWithSmsCode(_smsController.text.trim());
+      } else {
+        await auth.verifyPhoneNumber(_phoneController.text.trim());
+        if (auth.error == null && mounted) {
+          _fadeController.reset();
+          _slideController.reset();
+          setState(() => _codeSent = true);
+          _fadeController.forward();
+          _slideController.forward();
+        }
       }
     }
 
@@ -88,6 +122,47 @@ class _AuthScreenState extends State<AuthScreen>
         margin: const EdgeInsets.all(16),
       ));
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final controller = TextEditingController(text: _emailController.text);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your email to receive a password reset link.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Email Address'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = controller.text.trim();
+              await context.read<AuthProvider>().sendPasswordResetEmail(email);
+              if (!mounted) return;
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Reset link sent! Please check your email.'),
+                backgroundColor: AppTheme.primaryGreen,
+              ));
+            },
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -195,17 +270,6 @@ class _AuthScreenState extends State<AuthScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
-        // Bismillah
-        const Text(
-          'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-          style: TextStyle(
-            fontSize: 18,
-            color: AppTheme.premiumGold,
-            fontFamily: 'AmiriQuran',
-          ),
-          textDirection: TextDirection.rtl,
-        ),
       ],
     );
   }
@@ -228,20 +292,26 @@ class _AuthScreenState extends State<AuthScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ─── Mode Toggle (Phone/Email) ───
+              if (!_codeSent) _buildAuthModeToggle(),
+              const SizedBox(height: 20),
+
               // Header
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 child: Column(
-                  key: ValueKey(_codeSent),
+                  key: ValueKey('${_codeSent}_${_isEmailAuth}_${_isSignUp}'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       _codeSent
                           ? 'Verify your number'
-                          : 'Sign in with Phone',
+                          : (_isEmailAuth 
+                              ? (_isSignUp ? 'Create Account' : 'Welcome Back') 
+                              : 'Sign in with Phone'),
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -249,7 +319,9 @@ class _AuthScreenState extends State<AuthScreen>
                     Text(
                       _codeSent
                           ? 'Enter the 6-digit code sent to your phone'
-                          : 'We\'ll send you a verification code',
+                          : (_isEmailAuth 
+                              ? (_isSignUp ? 'Join the community & master recitation' : 'Log in to continue your progress')
+                              : 'We\'ll send you a verification code'),
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppTheme.textSecondary,
@@ -260,18 +332,34 @@ class _AuthScreenState extends State<AuthScreen>
               ),
               const SizedBox(height: 24),
 
-              // Field
+              // Fields
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: _codeSent
                     ? _buildOTPField()
-                    : _buildPhoneField(),
+                    : (_isEmailAuth ? _buildEmailFields() : _buildPhoneField()),
               ),
 
-              const SizedBox(height: 24),
+              if (_isEmailAuth && !_isSignUp) ...[
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _showForgotPasswordDialog,
+                    child: const Text('Forgot Password?',
+                        style: TextStyle(fontSize: 12, color: AppTheme.primaryGreen)),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 24),
+              ],
 
               // CTA Button
               _buildSubmitButton(auth),
+
+              const SizedBox(height: 16),
+
+              // ─── Switch Login/Signup ───
+              if (!_codeSent && _isEmailAuth) _buildSignupToggle(),
 
               // Back to phone
               if (_codeSent) ...[
@@ -295,6 +383,165 @@ class _AuthScreenState extends State<AuthScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAuthModeToggle() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _buildToggleItem('Email', _isEmailAuth, () => setState(() => _isEmailAuth = true)),
+          _buildToggleItem('Phone', !_isEmailAuth, () => setState(() => _isEmailAuth = false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleItem(String label, bool isSelected, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryGreen : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isSelected ? Colors.black : AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignupToggle() {
+    return Center(
+      child: GestureDetector(
+        onTap: () => setState(() => _isSignUp = !_isSignUp),
+        child: RichText(
+          text: TextSpan(
+            text: _isSignUp ? 'Already have an account? ' : 'New to TajwidCoach? ',
+            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            children: [
+              TextSpan(
+                text: _isSignUp ? 'Sign In' : 'Join Now',
+                style: const TextStyle(
+                  color: AppTheme.primaryGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailFields() {
+    return Column(
+      key: const ValueKey('email_fields'),
+      children: [
+        if (_isSignUp) ...[
+          _buildTextField(
+            controller: _nameController,
+            label: 'Full Name',
+            hint: 'Your name',
+            icon: Icons.person_rounded,
+          ),
+          const SizedBox(height: 16),
+        ],
+        _buildTextField(
+          controller: _emailController,
+          label: 'Email Address',
+          hint: 'you@example.com',
+          icon: Icons.email_rounded,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _passwordController,
+          label: 'Password',
+          hint: '••••••••',
+          icon: Icons.lock_rounded,
+          obscureText: !_showPassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _showPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+              color: AppTheme.textHint,
+              size: 18,
+            ),
+            onPressed: () => setState(() => _showPassword = !_showPassword),
+          ),
+        ),
+        if (_isSignUp) ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _confirmPasswordController,
+            label: 'Confirm Password',
+            hint: '••••••••',
+            icon: Icons.lock_clock_rounded,
+            obscureText: !_showConfirmPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _showConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                color: AppTheme.textHint,
+                size: 18,
+              ),
+              onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          style: const TextStyle(color: AppTheme.textPrimary, fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: AppTheme.primaryGreen, size: 18),
+            suffixIcon: suffixIcon,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ],
     );
   }
 
@@ -390,13 +637,11 @@ class _AuthScreenState extends State<AuthScreen>
   Widget _buildSubmitButton(AuthProvider auth) {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 56,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: auth.isLoading
-              ? null
-              : AppTheme.greenGradient,
-          borderRadius: BorderRadius.circular(14),
+          gradient: auth.isLoading ? null : AppTheme.greenGradient,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: auth.isLoading
               ? []
               : [
@@ -413,8 +658,9 @@ class _AuthScreenState extends State<AuthScreen>
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: Colors.black,
+            padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
           child: auth.isLoading
@@ -427,10 +673,11 @@ class _AuthScreenState extends State<AuthScreen>
                   ),
                 )
               : Text(
-                  _codeSent ? 'Verify Code ✓' : 'Send Code →',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  _codeSent ? 'Verify Code ✓' : (_isEmailAuth ? (_isSignUp ? 'Create Account' : 'Sign In') : 'Send Code →'),
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
                 ),
         ),

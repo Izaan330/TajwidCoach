@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -76,11 +78,46 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 16),
+          // ───── Legal ─────
+          const _SectionHeader(title: 'Legal'),
+          const SizedBox(height: 8),
+
+          _SettingsCard(
+            icon: Icons.privacy_tip_rounded,
+            title: 'Privacy Policy',
+            subtitle: 'How we handle your data',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+          // ───── Account ─────
+          const _SectionHeader(title: 'Account'),
+          const SizedBox(height: 8),
+
+          _SettingsCard(
+            icon: Icons.logout_rounded,
+            title: 'Logout',
+            subtitle: 'Sign out of your account',
+            onTap: () => _showLogoutDialog(context),
+          ),
+
+          _SettingsCard(
+            icon: Icons.delete_forever_rounded,
+            title: 'Delete Account',
+            subtitle: 'Permanently remove your data',
+            onTap: () => _showDeleteAccountDialog(context),
+            isDanger: true,
+          ),
+
           const SizedBox(height: 32),
           // Info
           Center(
             child: Text(
-              'Changing script or translation will refresh Quran text.',
+              'TajwidCoach v1.0.0+1\nMade with ❤️ for the Ummah',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -111,6 +148,58 @@ class SettingsScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _TranslationPickerSheet(settings: settings),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<AuthProvider>().signOut();
+              // The AuthWrapper at the root of the app will automatically
+              // switch to the AuthScreen when isAuthenticated becomes false.
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+        content: const Text(
+          'This action is permanent and will delete all your progress, recordings, and personal data. Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await context.read<AuthProvider>().deleteAccount();
+              if (context.mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            },
+            child: const Text('Delete Permanently', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -339,16 +428,19 @@ class _SettingsCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isDanger;
 
   const _SettingsCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isDanger = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = isDanger ? AppTheme.qalqalahRed : AppTheme.primaryGreen;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
@@ -358,13 +450,17 @@ class _SettingsCard extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppTheme.primaryGreen.withAlpha(20),
+            color: color.withAlpha(20),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppTheme.primaryGreen, size: 20),
+          child: Icon(icon, color: color, size: 20),
         ),
         title: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: isDanger ? AppTheme.qalqalahRed : AppTheme.textPrimary,
+            )),
         subtitle: Text(subtitle,
             style: const TextStyle(
                 fontSize: 12, color: AppTheme.textSecondary)),

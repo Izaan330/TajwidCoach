@@ -9,7 +9,7 @@ import '../providers/quran_provider.dart';
 import '../models/last_read_model.dart';
 import '../models/surah_model.dart';
 import 'quran/surah_detail_screen.dart';
-import 'store/store_screen.dart';
+import 'store/paywall_screen.dart';
 import 'settings/settings_screen.dart';
 import 'progress/progress_screen.dart';
 
@@ -126,7 +126,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        user?.name ?? 'Student',
+                        user?.isSheikh == true ? 'Sheikh ${user?.name}' : (user?.name ?? 'Student'),
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
@@ -202,7 +202,7 @@ class HomeScreen extends StatelessWidget {
                         HapticFeedback.mediumImpact();
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                              builder: (_) => const StoreScreen()),
+                              builder: (_) => const PaywallScreen()),
                         );
                       },
                     ),

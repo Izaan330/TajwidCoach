@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../models/sheikh_model.dart';
 import '../../providers/sheikh_provider.dart';
+import '../store/paywall_screen.dart';
 import 'sheikh_profile_screen.dart';
 import 'sheikh_dashboard_screen.dart';
 import 'sheikh_onboarding_screen.dart';
+
 class SheikhListScreen extends StatefulWidget {
   const SheikhListScreen({super.key});
 
@@ -41,8 +44,9 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
 
     final filtered = sheikhs.where((s) {
       final matchesCity = _selectedCity == 'All' || s.city == _selectedCity;
-      final matchesSearch = s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          s.masjid.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch =
+          s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              s.masjid.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCity && matchesSearch;
     }).toList();
 
@@ -71,7 +75,8 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Search by name or masjid...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.primaryGreen),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppTheme.primaryGreen),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -87,12 +92,6 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
             ),
           ),
 
-          if (!isSheikh)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _BecomeScholarCard(),
-            ),
-          
           // City filter
           SizedBox(
             height: 54,
@@ -116,13 +115,16 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
                       color:
                           selected ? AppTheme.primaryGreen : AppTheme.cardWhite,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: selected ? [
-                        BoxShadow(
-                          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ] : null,
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.primaryGreen
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : null,
                     ),
                     child: Center(
                       child: Text(
@@ -144,16 +146,39 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
-              itemBuilder: (context, index) => _SheikhCard(
-                sheikh: filtered[index],
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SheikhProfileScreen(sheikh: filtered[index]),
-                  ),
-                ),
-              ),
+              itemCount: filtered.length + (!isSheikh ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (!isSheikh && index == 0) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 24),
+                    child: _BecomeScholarCard(),
+                  );
+                }
+
+                final sheikhIndex = !isSheikh ? index - 1 : index;
+                final premium = context.watch<PremiumProvider>();
+                final sheikh = filtered[sheikhIndex];
+
+                return _SheikhCard(
+                  sheikh: sheikh,
+                  onTap: () {
+                    if (premium.isPremium) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              SheikhProfileScreen(sheikh: filtered[index]),
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PaywallScreen(),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -391,69 +416,83 @@ class _BecomeScholarCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Icon(
-              Icons.auto_stories,
-              size: 120,
-              color: Colors.white.withValues(alpha: 0.1),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -10,
+              top: -10,
+              child: Icon(
+                Icons.auto_stories,
+                size: 80,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Are you a Tajwid Scholar?',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20,
-                    color: Colors.white,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Are you a Sheikh?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Join our verified teachers to guide students.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Join our verified scholars to guide students\naround the world in their Quranic journey.',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SheikhOnboardingScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryGreen,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      minimumSize: const Size(0, 36),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Join Now',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SheikhOnboardingScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppTheme.primaryGreen,
-                    minimumSize: const Size(160, 44),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Become a Scholar', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

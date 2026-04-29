@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
+import 'services/firebase_messaging_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/streak_provider.dart';
 import 'providers/premium_provider.dart';
@@ -19,6 +20,10 @@ void main() async {
   try {
     await Firebase.initializeApp();
     isFirebaseInitialized = true;
+    
+    // Initialize Notifications
+    final messagingService = FirebaseMessagingService();
+    await messagingService.init();
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
     debugPrint('App will run in Offline/Demo mode.');

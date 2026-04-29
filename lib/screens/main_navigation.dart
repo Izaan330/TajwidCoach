@@ -63,6 +63,8 @@ class _MainNavigationState extends State<MainNavigation>
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
+    debugPrint('MainNavigation: isSheikh = ${auth.isSheikh}, user = ${auth.user?.name}, role = ${auth.user?.role}');
+
     if (auth.isSheikh) {
       return const SheikhDashboardScreen();
     }

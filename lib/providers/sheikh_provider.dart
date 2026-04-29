@@ -34,15 +34,72 @@ class SheikhProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final snapshot = await _firestore.collection('sheikhs').get();
-      _availableSheikhs = snapshot.docs
-          .map((doc) => SheikhModel.fromMap(doc.data()))
-          .toList();
+      final snapshot = await _firestore
+          .collection('sheikhs')
+          .where('isVerified', isEqualTo: true)
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        _availableSheikhs = snapshot.docs
+            .map((doc) => SheikhModel.fromMap(doc.data()))
+            .toList();
+      } else {
+        // Mock data for testing when Firestore is empty
+        _availableSheikhs = _getMockSheikhs();
+      }
     } catch (e) {
       debugPrint('Error fetching sheikhs: $e');
+      _availableSheikhs = _getMockSheikhs();
     }
     _isLoading = false;
     notifyListeners();
+  }
+
+  List<SheikhModel> _getMockSheikhs() {
+    return [
+      SheikhModel(
+        id: 'mock_1',
+        name: 'Sheikh Ahmed Al-Misri',
+        englishName: 'Ahmed Al-Misri',
+        phone: '+20 123 456 789',
+        masjid: 'Al-Azhar Mosque',
+        city: 'Cairo',
+        rating: 4.9,
+        totalStudents: 1250,
+        isVerified: true,
+        specializations: ['Hafs an Asim', 'Tajwid Theory'],
+        bio: 'Senior Sheikh at Al-Azhar with over 15 years of experience in teaching Tajwid and Qira\'at.',
+        pricePerSession: 500,
+      ),
+      SheikhModel(
+        id: 'mock_2',
+        name: 'Sheikh Abdullah Mansour',
+        englishName: 'Abdullah Mansour',
+        phone: '+966 50 123 4567',
+        masjid: 'Masjid An-Nabawi',
+        city: 'Medina',
+        rating: 4.8,
+        totalStudents: 850,
+        isVerified: true,
+        specializations: ['Warsh an Nafi', 'Hifz'],
+        bio: 'Specialist in Quranic memorization and the Warsh recitation style. Based in the holy city of Medina.',
+        pricePerSession: 750,
+      ),
+      SheikhModel(
+        id: 'mock_3',
+        name: 'Ustadha Fatima Zahra',
+        englishName: 'Fatima Zahra',
+        phone: '+44 20 7123 4567',
+        masjid: 'Central Mosque',
+        city: 'London',
+        rating: 5.0,
+        totalStudents: 420,
+        isVerified: true,
+        specializations: ['Child Education', 'Female Only Classes', 'Tajwid'],
+        bio: 'Dedicated teacher for children and women, focusing on foundational Tajwid and beautiful recitation.',
+        pricePerSession: 400,
+      ),
+    ];
   }
 
   /// Listen for pending reviews if the current user is a sheikh.
@@ -60,10 +117,34 @@ class SheikhProvider extends ChangeNotifier {
       final doc = await _firestore.collection('sheikhs').doc(sheikhId).get();
       if (doc.exists) {
         _currentSheikh = SheikhModel.fromMap(doc.data()!);
-        notifyListeners();
+      } else {
+        // Mock fallback for demo/development
+        _currentSheikh = SheikhModel(
+          id: sheikhId,
+          name: 'Sheikh User',
+          englishName: 'Sheikh User',
+          phone: '',
+          masjid: 'Demo Masjid',
+          city: 'Demo City',
+          isVerified: false,
+          isAvailable: true,
+        );
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('Error fetching current sheikh: $e');
+      // Even on error, provide a fallback to prevent UI issues
+      _currentSheikh = SheikhModel(
+        id: sheikhId,
+        name: 'Sheikh User',
+        englishName: 'Sheikh User',
+        phone: '',
+        masjid: 'Demo Masjid',
+        city: 'Demo City',
+        isVerified: false,
+        isAvailable: true,
+      );
+      notifyListeners();
     }
   }
 

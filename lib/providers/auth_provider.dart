@@ -55,7 +55,10 @@ class AuthProvider extends ChangeNotifier {
       if (doc.exists) {
         _user = UserModel.fromMap(doc.data()!);
       } else {
-        _user = UserModel(uid: uid, name: 'Student', phone: '');
+        // Only set default if we don't have a user already (prevent overwriting local updates)
+        if (_user == null || _user?.name == 'Student' || _user?.name == 'Guest Student') {
+          _user = UserModel(uid: uid, name: 'Student', phone: '');
+        }
       }
       notifyListeners();
     }, onError: (e) {
@@ -249,6 +252,7 @@ class AuthProvider extends ChangeNotifier {
           _firestore!.collection('users').doc(_user!.uid),
           {
             'role': 'sheikh',
+            'name': sheikhData.name,
             'masjid': sheikhData.masjid,
             'city': sheikhData.city,
           },
@@ -267,6 +271,7 @@ class AuthProvider extends ChangeNotifier {
       // Update local state
       _user = _user!.copyWith(
         role: 'sheikh',
+        name: sheikhData.name,
         masjid: sheikhData.masjid,
         city: sheikhData.city,
       );
@@ -276,10 +281,56 @@ class AuthProvider extends ChangeNotifier {
       // Fallback to local state upgrade so the UI can proceed in dev mode
       _user = _user!.copyWith(
         role: 'sheikh',
+        name: sheikhData.name,
         masjid: sheikhData.masjid,
         city: sheikhData.city,
       );
       _error = null; // Do not block UI
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    _error = null;
+    try {
+      if (isFirebaseAvailable && _auth != null) {
+        await _auth!.sendPasswordResetEmail(email: email);
+      } else {
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    } catch (e) {
+      _error = 'Failed to send reset email: $e';
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    if (_user == null) return;
+    _setLoading(true);
+    _error = null;
+    try {
+      if (isFirebaseAvailable && _auth != null && _firestore != null) {
+        final uid = _user!.uid;
+        // 1. Delete Firestore Data
+        await _firestore!.collection('users').doc(uid).delete();
+        // Optionally delete sheikh data if applicable
+        await _firestore!.collection('sheikhs').doc(uid).delete();
+        
+        // 2. Delete Auth User
+        await _auth!.currentUser?.delete();
+      }
+      _user = null;
+      notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        _error = 'Please log out and log in again to delete your account.';
+      } else {
+        _error = e.message;
+      }
+    } catch (e) {
+      _error = 'Account deletion failed: $e';
     } finally {
       _setLoading(false);
     }

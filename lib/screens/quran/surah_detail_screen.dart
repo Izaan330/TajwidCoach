@@ -1,9 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import '../../providers/premium_provider.dart';
+import '../store/paywall_screen.dart';
 
 import '../../theme/app_theme.dart';
 import '../../models/surah_model.dart';
@@ -209,6 +212,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       });
     }
     final script = settings.quranScript;
+    final premium = context.watch<PremiumProvider>();
+
+    // Premium Check
+    final isFreeSurah = widget.surah.number == 1 || widget.surah.number >= 78;
+    final isLocked = !premium.isPremium && !isFreeSurah;
 
     final isFullScreenMode =
         script == QuranScript.mushaf || script == QuranScript.tajweed;
@@ -249,13 +257,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 IconButton(
                   icon: const Icon(Icons.bookmark_add_outlined),
                   tooltip: 'Save Position',
-                  onPressed: _manualSaveLastRead,
+                  onPressed: isLocked ? null : _manualSaveLastRead,
                 ),
                 if (!isFullScreenMode)
                   IconButton(
                     icon: const Icon(Icons.mic_rounded),
                     color: AppTheme.accentAmber,
-                    onPressed: () => Navigator.of(context).push(
+                    onPressed: isLocked ? null : () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PracticeScreen(surah: widget.surah),
                       ),
@@ -264,7 +272,84 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               ],
             )
           : null,
-      body: _buildBody(script, ayahs, isLoading, quranProvider, settings),
+      body: isLocked 
+          ? _buildLockedOverlay(context)
+          : _buildBody(script, ayahs, isLoading, quranProvider, settings),
+    );
+  }
+
+  Widget _buildLockedOverlay(BuildContext context) {
+    return Stack(
+      children: [
+        // Blurred background of the first page/ayahs
+        Positioned.fill(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: Text('🕌', style: TextStyle(fontSize: 100)),
+              ),
+            ),
+          ),
+        ),
+        
+        // Lock message
+        Center(
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundSurface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_person_rounded, color: AppTheme.premiumGold, size: 64),
+                const SizedBox(height: 20),
+                const Text(
+                  'Premium Surah',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Access to all 114 Surahs is a Premium feature. Start your journey with the full Quran today.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.premiumGold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Unlock Full Quran', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Back to Free Surahs', style: TextStyle(color: AppTheme.textHint)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

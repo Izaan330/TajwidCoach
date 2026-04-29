@@ -134,10 +134,38 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
             ),
           ),
         ),
-        body: const TabBarView(children: [
-          _PendingReviewsTab(),
-          _MyStudentsTab(),
-        ]),
+        body: Column(
+          children: [
+            if (currentSheikh != null && !currentSheikh.isVerified)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: Colors.orange.withValues(alpha: 0.1),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Your profile is under review. You will appear in the search list once verified by our team.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const Expanded(
+              child: TabBarView(children: [
+                _PendingReviewsTab(),
+                _MyStudentsTab(),
+              ]),
+            ),
+          ],
+        ),
       ),
     );
   }

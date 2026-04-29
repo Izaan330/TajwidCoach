@@ -8,6 +8,7 @@ import '../../providers/premium_provider.dart';
 import '../../utils/quran_constants.dart';
 import '../../models/last_read_model.dart';
 import 'surah_detail_screen.dart';
+import '../store/paywall_screen.dart';
 
 class QuranLibraryScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -201,7 +202,16 @@ class _QariSelector extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Upgrade'),
           ),
         ],
