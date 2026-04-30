@@ -811,10 +811,15 @@ class _WeakRuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ruleColor =
+    Color ruleColor =
         Color(int.parse(rule.colorHex.replaceFirst('#', '0xFF')));
     final bgColor =
         Color(int.parse(rule.backgroundHex.replaceFirst('#', '0xFF')));
+
+    // Ensure ruleColor is bright enough for dark mode
+    if (ruleColor.computeLuminance() < 0.4) {
+      ruleColor = HSLColor.fromColor(ruleColor).withLightness(0.75).toColor();
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -911,10 +916,10 @@ class _WeakRuleCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Lv ${progress.level}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textPrimary.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -923,10 +928,10 @@ class _WeakRuleCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
-              color: AppTheme.textHint,
+              color: AppTheme.textSecondary.withValues(alpha: 0.5),
             ),
           ],
         ),

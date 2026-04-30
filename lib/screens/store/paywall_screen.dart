@@ -60,7 +60,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       children: [
-                        const Text('👑', style: TextStyle(fontSize: 64)),
+                        const Icon(
+                          Icons.workspace_premium_rounded,
+                          size: 80,
+                          color: AppTheme.premiumGold,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'TajwidCoach Premium',
@@ -84,12 +88,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         const SizedBox(height: 40),
 
                         // Features List
-                        _buildFeatureRow('✨ Full Quran (114 Surahs) with AI feedback'),
-                        _buildFeatureRow('🎙️ 15+ World-class Qari comparisons'),
-                        _buildFeatureRow('🎯 Word-level mistake detection'),
-                        _buildFeatureRow('📈 Advanced progress analytics'),
-                        _buildFeatureRow('🕌 Unlimited Sheikh verification sessions'),
-                        _buildFeatureRow('🚫 Completely Ad-Free experience'),
+                        _buildFeatureRow('Full Quran (114 Surahs) with AI feedback'),
+                        _buildFeatureRow('15+ World-class Qari comparisons'),
+                        _buildFeatureRow('Word-level mistake detection'),
+                        _buildFeatureRow('Advanced progress analytics'),
+                        _buildFeatureRow('Unlimited Sheikh verification sessions'),
+                        _buildFeatureRow('Completely Ad-Free experience'),
 
                         const SizedBox(height: 48),
 

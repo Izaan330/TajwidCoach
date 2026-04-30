@@ -209,7 +209,7 @@ class _PracticeScreenState extends State<PracticeScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '🔥 Streak increased to ${streakProvider.currentStreak}!',
+            'Streak increased to ${streakProvider.currentStreak}!',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: AppTheme.primaryGreen,
@@ -447,8 +447,8 @@ class _PracticeScreenState extends State<PracticeScreen>
               ),
               child: const Row(
                 children: [
-                  Text('💡', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 10),
+                  Icon(Icons.tips_and_updates_rounded, color: AppTheme.maddAmber, size: 24),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Speak clearly in a quiet place. Our AI detects 25+ Tajwid rules.',
@@ -540,7 +540,7 @@ class _PracticeScreenState extends State<PracticeScreen>
               children: [
                 Expanded(
                   child: _PracticeModeCard(
-                    emoji: '🎯',
+                    icon: Icons.my_location_rounded,
                     title: 'Weak Spots',
                     subtitle: 'Target problem rules',
                     color: AppTheme.qalqalahRed,
@@ -552,7 +552,7 @@ class _PracticeScreenState extends State<PracticeScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: _PracticeModeCard(
-                    emoji: '📚',
+                    icon: Icons.menu_book_rounded,
                     title: 'Hifz Mode',
                     subtitle: 'Progressive word hiding',
                     color: AppTheme.idghamBlue,
@@ -577,14 +577,14 @@ class _PracticeScreenState extends State<PracticeScreen>
 }
 
 class _PracticeModeCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback? onTap;
 
   const _PracticeModeCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
@@ -610,8 +610,15 @@ class _PracticeModeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 28)),
-              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 12),
               Text(
                 title,
                 style: TextStyle(

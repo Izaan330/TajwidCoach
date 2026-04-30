@@ -891,7 +891,7 @@ class _HifzModeScreenState extends State<HifzModeScreen>
                       children: [
                         Expanded(
                           child: _AssessButton(
-                            emoji: '🌟',
+                            icon: Icons.star_rounded,
                             label: 'Perfect',
                             subtitle: 'Harder next',
                             color: AppTheme.primaryGreen,
@@ -901,7 +901,7 @@ class _HifzModeScreenState extends State<HifzModeScreen>
                         const SizedBox(width: 10),
                         Expanded(
                           child: _AssessButton(
-                            emoji: '👍',
+                            icon: Icons.thumb_up_rounded,
                             label: 'Good',
                             subtitle: 'Stay same',
                             color: AppTheme.idghamBlue,
@@ -911,7 +911,7 @@ class _HifzModeScreenState extends State<HifzModeScreen>
                         const SizedBox(width: 10),
                         Expanded(
                           child: _AssessButton(
-                            emoji: '📖',
+                            icon: Icons.auto_stories_rounded,
                             label: 'Review',
                             subtitle: 'Easier next',
                             color: AppTheme.accentAmber,
@@ -1025,14 +1025,14 @@ class _HowItWorksStep extends StatelessWidget {
 }
 
 class _AssessButton extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
 
   const _AssessButton({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.subtitle,
     required this.color,
@@ -1054,7 +1054,7 @@ class _AssessButton extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
+            Icon(icon, size: 24, color: color),
             const SizedBox(height: 4),
             Text(
               label,

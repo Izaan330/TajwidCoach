@@ -254,6 +254,43 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 ],
               ),
               actions: [
+                PopupMenuButton<QuranScript>(
+                  icon: const Icon(Icons.auto_stories_outlined),
+                  tooltip: 'Reading Mode',
+                  onSelected: (script) => settings.setQuranScript(script),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: QuranScript.mushaf,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.menu_book_rounded, color: AppTheme.primaryGreen, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Mushaf (Madani)', style: TextStyle(color: settings.quranScript == QuranScript.mushaf ? AppTheme.primaryGreen : null)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: QuranScript.indoPak,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.text_fields_rounded, color: AppTheme.info, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Indo-Pak Script', style: TextStyle(color: settings.quranScript == QuranScript.indoPak ? AppTheme.info : null)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: QuranScript.tajweed,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.color_lens_rounded, color: AppTheme.accentAmber, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Tajweed Text', style: TextStyle(color: settings.quranScript == QuranScript.tajweed ? AppTheme.accentAmber : null)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 IconButton(
                   icon: const Icon(Icons.bookmark_add_outlined),
                   tooltip: 'Save Position',
@@ -287,8 +324,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: Text('🕌', style: TextStyle(fontSize: 100)),
+              child: Center(
+                child: Icon(Icons.mosque_rounded, size: 100, color: Colors.white.withValues(alpha: 0.5)),
               ),
             ),
           ),
@@ -378,11 +415,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
     return Column(
       children: [
-        _ScriptToggleBar(
-          currentScript: script,
-          onSelect: settings.setQuranScript,
-        ),
-
         // Ayah list with scrollable headers
         Expanded(
           child: isLoading
@@ -500,58 +532,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 // 3-Way Script Toggle Bar
 // ─────────────────────────────────────────────────────────
 
-class _ScriptToggleBar extends StatelessWidget {
-  final QuranScript currentScript;
-  final Function(QuranScript) onSelect;
 
-  const _ScriptToggleBar({
-    required this.currentScript,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppTheme.cardWhite,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: QuranScript.values.map((script) {
-          final labels = {
-            QuranScript.mushaf: '🕌 Mushaf',
-            QuranScript.indoPak: '🔠 Indo-Pak',
-            QuranScript.tajweed: '🎨 Tajweed',
-          };
-          final isSelected = script == currentScript;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onSelect(script),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryGreen
-                      : AppTheme.backgroundCream,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  labels[script]!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : AppTheme.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────
 // Full-Page View (Handles both QCF Mushaf and Tajweed Images)
@@ -707,11 +688,7 @@ class _FullPageViewerState extends State<_FullPageViewer> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _ScriptToggleBar(
-                    currentScript: settings.quranScript,
-                    onSelect: settings.setQuranScript,
-                  ),
-                  const SizedBox(height: 12),
+
                   // Page number indicator
                   Container(
                     padding:

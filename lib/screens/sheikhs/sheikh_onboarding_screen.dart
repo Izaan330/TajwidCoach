@@ -299,16 +299,16 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
           ),
           const SizedBox(height: 36),
           ...[
-            ('🎓', 'Personalized student feedback'),
-            ('📜', 'Issue digital Ijazah certificates'),
-            ('📋', 'Manage your own student lists'),
+            (Icons.school_rounded, 'Personalized student feedback'),
+            (Icons.workspace_premium_rounded, 'Issue digital Ijazah certificates'),
+            (Icons.checklist_rounded, 'Manage your own student lists'),
           ].map((e) => _buildBenefitTile(e.$1, e.$2)),
         ],
       ),
     );
   }
 
-  Widget _buildBenefitTile(String emoji, String text) {
+  Widget _buildBenefitTile(IconData icon, String text) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -319,7 +319,7 @@ class _SheikhOnboardingScreenState extends State<SheikhOnboardingScreen>
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 22)),
+          Icon(icon, size: 24, color: AppTheme.primaryGreen),
           const SizedBox(width: 14),
           Expanded(
             child: Text(text,

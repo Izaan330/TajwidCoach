@@ -192,7 +192,13 @@ class _QariSelector extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('👑 Premium Feature'),
+        title: const Row(
+          children: [
+            Icon(Icons.workspace_premium_rounded, color: AppTheme.premiumGold, size: 24),
+            SizedBox(width: 8),
+            Text('Premium Feature'),
+          ],
+        ),
         content: const Text(
           'Access all 15 world-class Qaris with Premium. Upgrade for just ₹199/year!',
         ),

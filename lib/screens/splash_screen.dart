@@ -194,8 +194,8 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🔥',
-                                    style: TextStyle(fontSize: 22)),
+                                const Icon(Icons.local_fire_department_rounded,
+                                    color: AppTheme.accentAmber, size: 24),
                                 const SizedBox(width: 12),
                                 Text(
                                   '$streak-DAY STREAK!',
@@ -321,7 +321,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   static const List<_OnboardingPage> _pages = [
     _OnboardingPage(
-      emoji: '🎤',
+      icon: Icons.mic_rounded,
       title: 'Assalamu Alaikum!',
       subtitle: 'Welcome to TajwidCoach',
       description:
@@ -330,16 +330,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       bgColor: Color(0xFF002416),
     ),
     _OnboardingPage(
-      emoji: '🔥',
+      icon: Icons.local_fire_department_rounded,
       title: 'Build Your Streak',
       subtitle: 'Practice Every Day',
       description:
-          'Earn badges for consistent practice. 7-day 🔥, 30-day 🌟, 100-day 🕌, 365-day 👑. Don\'t break your streak!',
+          'Earn badges for consistent practice. 7-day flame, 30-day star, 100-day mosque, 365-day crown. Don\'t break your streak!',
       color: AppTheme.accentAmber,
       bgColor: Color(0xFF1C0E00),
     ),
     _OnboardingPage(
-      emoji: '👨‍🏫',
+      icon: Icons.school_rounded,
       title: 'Learn from Sheikhs',
       subtitle: 'Verified Islamic Scholars',
       description:
@@ -554,9 +554,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ],
             ),
             child: Center(
-              child: Text(
-                page.emoji,
-                style: const TextStyle(fontSize: 70),
+              child: Icon(
+                page.icon,
+                size: 70,
+                color: page.color,
               ),
             ),
           ),
@@ -698,7 +699,7 @@ class _OrbitPainter extends CustomPainter {
 
 // ─── Data model ───────────────────────────────────────────────────────────
 class _OnboardingPage {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final String description;
@@ -706,7 +707,7 @@ class _OnboardingPage {
   final Color bgColor;
 
   const _OnboardingPage({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.description,

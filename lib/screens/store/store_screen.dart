@@ -38,7 +38,7 @@ class StoreScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text('👑', style: TextStyle(fontSize: 48)),
+                  const Icon(Icons.workspace_premium_rounded, color: AppTheme.premiumGold, size: 54),
                   const SizedBox(height: 12),
                   const Text(
                     'TajwidCoach Premium',
@@ -64,12 +64,19 @@ class StoreScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      '🎯 7-Day Free Trial',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.stars_rounded, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          '7-Day Free Trial',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -90,7 +97,7 @@ class StoreScreen extends StatelessWidget {
                 ),
                 child: const Row(
                   children: [
-                    Text('✅', style: TextStyle(fontSize: 24)),
+                    Icon(Icons.check_circle_rounded, color: AppTheme.ikhfaGreen, size: 28),
                     SizedBox(width: 12),
                     Text(
                       'You are a Premium member! Enjoy all features.',
@@ -134,7 +141,8 @@ class StoreScreen extends StatelessWidget {
                     title: '1 Refresh',
                     description: 'Refill 1 Streak Freeze',
                     price: '₹49',
-                    icon: '❄️',
+                    icon: Icons.ac_unit_rounded,
+                    iconColor: AppTheme.info,
                     onTap: () {
                       context.read<StreakProvider>().purchaseFreezes(1);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +157,8 @@ class StoreScreen extends StatelessWidget {
                     title: '3 Pack',
                     description: 'Save 30% on Freezes',
                     price: '₹99',
-                    icon: '❄️❄️',
+                    icon: Icons.ac_unit_rounded,
+                    iconColor: AppTheme.info,
                     onTap: () {
                       context.read<StreakProvider>().purchaseFreezes(3);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,10 +189,10 @@ class StoreScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _PaymentBadge('🇮🇳 UPI'),
-                      _PaymentBadge('📱 Google Pay'),
-                      _PaymentBadge('🍎 Apple Pay'),
-                      _PaymentBadge('💳 Razorpay'),
+                      _PaymentBadge('UPI'),
+                      _PaymentBadge('Google Pay'),
+                      _PaymentBadge('Apple Pay'),
+                      _PaymentBadge('Razorpay'),
                     ],
                   ),
                 ],
@@ -269,13 +278,20 @@ class _PlanCard extends StatelessWidget {
                             color: AppTheme.primaryGreen,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            '⭐ Most Popular',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star_rounded, color: Colors.white, size: 12),
+                              SizedBox(width: 4),
+                              Text(
+                                'Most Popular',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       Text(
@@ -358,7 +374,17 @@ class _PlanCard extends StatelessWidget {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(isPurchased ? '✅ Current Plan' : 'Start Free Trial'),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isPurchased) ...[
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(isPurchased ? 'Current Plan' : 'Start Free Trial'),
+                        ],
+                      ),
               ),
             ),
           ],
@@ -372,7 +398,8 @@ class _BoosterCard extends StatelessWidget {
   final String title;
   final String description;
   final String price;
-  final String icon;
+  final IconData icon;
+  final Color iconColor;
   final VoidCallback onTap;
 
   const _BoosterCard({
@@ -380,6 +407,7 @@ class _BoosterCard extends StatelessWidget {
     required this.description,
     required this.price,
     required this.icon,
+    required this.iconColor,
     required this.onTap,
   });
 
@@ -396,7 +424,7 @@ class _BoosterCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 32)),
+            Icon(icon, color: iconColor, size: 36),
             const SizedBox(height: 8),
             Text(
               title,
@@ -451,6 +479,14 @@ class _PaymentBadge extends StatelessWidget {
 }
 
 class _FeatureComparisonTable extends StatelessWidget {
+  Widget _buildCell(String val) {
+    if (val == '✅') return const Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen, size: 18);
+    if (val == '🔒') return const Icon(Icons.lock_rounded, color: AppTheme.textHint, size: 18);
+    if (val == '❌ Yes') return const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cancel_rounded, color: AppTheme.qalqalahRed, size: 16), SizedBox(width: 4), Text('Yes', style: TextStyle(fontSize: 12))]);
+    if (val == '✅ None') return const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen, size: 16), SizedBox(width: 4), Text('None', style: TextStyle(fontSize: 12))]);
+    return Text(val, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12));
+  }
+
   @override
   Widget build(BuildContext context) {
     const features = [
@@ -534,18 +570,10 @@ class _FeatureComparisonTable extends StatelessWidget {
                     child: Text(row[0], style: const TextStyle(fontSize: 13)),
                   ),
                   Expanded(
-                    child: Text(
-                      row[1],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                    child: Center(child: _buildCell(row[1])),
                   ),
                   Expanded(
-                    child: Text(
-                      row[2],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                    child: Center(child: _buildCell(row[2])),
                   ),
                 ],
               ),

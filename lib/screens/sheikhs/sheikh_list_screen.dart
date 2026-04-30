@@ -263,13 +263,20 @@ class _SheikhCard extends StatelessWidget {
                                       .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  '✅ Verified',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.primaryGreen,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified_rounded, color: AppTheme.primaryGreen, size: 12),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Verified',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.primaryGreen,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
@@ -342,15 +349,23 @@ class _SheikhCard extends StatelessWidget {
                           : AppTheme.divider,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      sheikh.isAvailable ? '✅ Available' : '⏰ Busy',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: sheikh.isAvailable
-                            ? AppTheme.ikhfaGreen
-                            : AppTheme.textHint,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(sheikh.isAvailable ? Icons.event_available_rounded : Icons.schedule_rounded, 
+                             color: sheikh.isAvailable ? AppTheme.ikhfaGreen : AppTheme.textHint, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          sheikh.isAvailable ? 'Available' : 'Busy',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: sheikh.isAvailable
+                                ? AppTheme.ikhfaGreen
+                                : AppTheme.textHint,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -442,11 +457,11 @@ class _BecomeScholarCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Are you a Sheikh?',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
@@ -454,8 +469,8 @@ class _BecomeScholarCard extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
+                        SizedBox(height: 4),
+                        Text(
                           'Join our verified teachers to guide students.',
                           style: TextStyle(
                             color: Colors.white70,

@@ -82,11 +82,11 @@ class SettingsProvider extends ChangeNotifier {
   String get scriptName {
     switch (_quranScript) {
       case QuranScript.mushaf:
-        return '🕌 Mushaf';
+        return 'Mushaf';
       case QuranScript.indoPak:
-        return '🔠 Indo-Pak';
+        return 'Indo-Pak';
       case QuranScript.tajweed:
-        return '🎨 Tajweed';
+        return 'Tajweed';
     }
   }
 

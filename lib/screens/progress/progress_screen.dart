@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/streak_provider.dart';
@@ -24,7 +25,7 @@ class _ProgressScreenState extends State<ProgressScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -40,16 +41,21 @@ class _ProgressScreenState extends State<ProgressScreen>
     return Scaffold(
       backgroundColor: AppTheme.backgroundCream,
       appBar: AppBar(
-        title: const Text('My Progress'),
+        title: const Text('Deen Hub'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           labelColor: AppTheme.primaryGreen,
           unselectedLabelColor: AppTheme.textHint,
           indicatorColor: AppTheme.primaryGreen,
+          tabAlignment: TabAlignment.start,
           tabs: const [
             Tab(text: 'Streak'),
             Tab(text: 'Tajwid'),
             Tab(text: 'Badges'),
+            Tab(text: 'Tasbih'),
+            Tab(text: 'Duas'),
+            Tab(text: 'Events'),
           ],
         ),
       ),
@@ -59,6 +65,9 @@ class _ProgressScreenState extends State<ProgressScreen>
           _StreakTab(streak: streak),
           const _TajwidTab(),
           _BadgesTab(earnedBadges: streak.earnedBadges),
+          const _TasbihTab(),
+          const _DuasTab(),
+          const _EventsTab(),
         ],
       ),
     );
@@ -84,7 +93,11 @@ class _StreakTab extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF00BFA5), Color(0xFF00796B), Color(0xFF004D40)],
+                colors: [
+                  Color(0xFF00BFA5),
+                  Color(0xFF00796B),
+                  Color(0xFF004D40)
+                ],
                 stops: [0.0, 0.5, 1.0],
               ),
               borderRadius: BorderRadius.circular(32),
@@ -103,7 +116,8 @@ class _StreakTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2), width: 1.5),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.white.withValues(alpha: 0.1),
@@ -112,7 +126,7 @@ class _StreakTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Text('🔥', style: TextStyle(fontSize: 48)),
+                  child: const Icon(Icons.local_fire_department_rounded, color: AppTheme.accentAmber, size: 54),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -136,7 +150,8 @@ class _StreakTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -150,7 +165,10 @@ class _StreakTab extends StatelessWidget {
                           Icons.emoji_events_rounded,
                         ),
                       ),
-                      Container(width: 1.5, height: 40, color: Colors.white.withValues(alpha: 0.1)),
+                      Container(
+                          width: 1.5,
+                          height: 40,
+                          color: Colors.white.withValues(alpha: 0.1)),
                       Expanded(
                         child: _StatItem(
                           'FREEZES',
@@ -158,7 +176,10 @@ class _StreakTab extends StatelessWidget {
                           Icons.ac_unit_rounded,
                         ),
                       ),
-                      Container(width: 1.5, height: 40, color: Colors.white.withValues(alpha: 0.1)),
+                      Container(
+                          width: 1.5,
+                          height: 40,
+                          color: Colors.white.withValues(alpha: 0.1)),
                       Expanded(
                         child: _StatItem(
                           'BADGES',
@@ -177,22 +198,36 @@ class _StreakTab extends StatelessWidget {
           // Status message
           if (streak.isStreakInDanger)
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
+                color: AppTheme.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border:
+                    Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Text('⚠️', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppTheme.warning,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Text(
                       "Don't break your ${streak.currentStreak}-day streak! Practice today to keep it going!",
-                      style: const TextStyle(
-                        color: Color(0xFFC62828),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -208,7 +243,7 @@ class _StreakTab extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Text('✅', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.check_circle_rounded, color: AppTheme.ikhfaGreen, size: 24),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -292,7 +327,8 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrentMonth());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scrollToCurrentMonth());
   }
 
   @override
@@ -304,20 +340,21 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
   void _scrollToCurrentMonth() {
     if (!_scrollController.hasClients || _monthWidths.isEmpty) return;
 
-    final screenWidth = MediaQuery.of(context).size.width - 48; // Scaffold padding + Card padding
+    final screenWidth = MediaQuery.of(context).size.width -
+        48; // Scaffold padding + Card padding
     double targetOffset = 0;
-    
+
     // We want to center the LAST month (current month)
     // targetOffset = (Total Width - MonthWidths.last) - (screenWidth / 2) + (MonthWidths.last / 2)
-    
+
     double totalWidth = 0;
     for (int i = 0; i < _monthWidths.length - 1; i++) {
       totalWidth += _monthWidths[i] + _gapWidth;
     }
-    
+
     final lastMonthWidth = _monthWidths.last;
     targetOffset = totalWidth + (lastMonthWidth / 2) - (screenWidth / 2);
-    
+
     if (targetOffset < 0) targetOffset = 0;
     if (targetOffset > _scrollController.position.maxScrollExtent) {
       targetOffset = _scrollController.position.maxScrollExtent;
@@ -334,7 +371,7 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     final List<DateTime> monthsToShow = [];
     for (int i = 5; i >= 0; i--) {
       monthsToShow.add(DateTime(now.year, now.month - i, 1));
@@ -342,13 +379,13 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
 
     _monthWidths.clear();
     final monthBlocks = <Widget>[];
-    
+
     for (int i = 0; i < monthsToShow.length; i++) {
       final monthStart = monthsToShow[i];
       final (columns, width) = _buildMonthColumns(monthStart, today);
-      
+
       _monthWidths.add(width);
-      
+
       monthBlocks.add(_buildMonthBlock(monthStart, columns));
       if (i < monthsToShow.length - 1) {
         monthBlocks.add(SizedBox(width: _gapWidth));
@@ -363,7 +400,7 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), 
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -378,14 +415,15 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
               Text(
                 'PRACTICE HISTORY',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12, 
-                  fontWeight: FontWeight.w800, 
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                   color: AppTheme.primaryGreen,
                   letterSpacing: 1.2,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryGreen.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
@@ -393,8 +431,8 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
                 child: Text(
                   'ACTIVE',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 9, 
-                    fontWeight: FontWeight.w900, 
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
                     color: AppTheme.primaryGreen,
                   ),
                 ),
@@ -414,17 +452,26 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
           const SizedBox(height: 32),
           Row(
             children: [
-              Text('Less', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint)),
+              Text('Less',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textHint)),
               const SizedBox(width: 10),
               _legendBox(const Color(0xFFF1F3F4)),
               _legendBox(const Color(0xFFA7FFEB)),
               _legendBox(const Color(0xFF1DE9B6)),
               _legendBox(const Color(0xFF00BFA5)),
               const SizedBox(width: 10),
-              Text('More', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textHint)),
+              Text('More',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textHint)),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.backgroundCream,
                   borderRadius: BorderRadius.circular(12),
@@ -432,13 +479,14 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 12, color: AppTheme.primaryGreen),
+                    const Icon(Icons.calendar_today_rounded,
+                        size: 12, color: AppTheme.primaryGreen),
                     const SizedBox(width: 6),
                     Text(
-                      '${widget.heatmapData.length} days active', 
+                      '${widget.heatmapData.length} days active',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10, 
-                        fontWeight: FontWeight.bold, 
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                         color: AppTheme.primaryGreen,
                       ),
                     ),
@@ -452,66 +500,81 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
     );
   }
 
-  (List<Widget>, double) _buildMonthColumns(DateTime monthStart, DateTime today) {
+  (List<Widget>, double) _buildMonthColumns(
+      DateTime monthStart, DateTime today) {
     final firstDayOfMonth = DateTime(monthStart.year, monthStart.month, 1);
     final lastDayOfMonth = DateTime(monthStart.year, monthStart.month + 1, 0);
-    
+
     // Start of week padding (Sunday = 0 for our calc)
     // DateTime.weekday: Mon=1, ..., Sun=7
-    final startPadding = firstDayOfMonth.weekday % 7; 
-    
+    final startPadding = firstDayOfMonth.weekday % 7;
+
     final daysInMonth = lastDayOfMonth.day;
     final totalSlots = ((startPadding + daysInMonth + 6) ~/ 7) * 7;
-    
+
     final List<Widget> columns = [];
     List<Widget> currentColumnCells = [];
-    
+
     for (int i = 0; i < totalSlots; i++) {
-        final dayIndex = i - startPadding;
-        if (dayIndex < 0 || dayIndex >= daysInMonth) {
-            currentColumnCells.add(_cell(Colors.transparent));
+      final dayIndex = i - startPadding;
+      if (dayIndex < 0 || dayIndex >= daysInMonth) {
+        currentColumnCells.add(_cell(Colors.transparent));
+      } else {
+        final date = DateTime(monthStart.year, monthStart.month, dayIndex + 1);
+        if (date.isAfter(today)) {
+          currentColumnCells.add(_cell(Colors.transparent));
         } else {
-            final date = DateTime(monthStart.year, monthStart.month, dayIndex + 1);
-            if (date.isAfter(today)) {
-                currentColumnCells.add(_cell(Colors.transparent));
-            } else {
-                final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-                final minutes = widget.heatmapData[key] ?? 0;
-                
-                Color cellColor;
-                if (minutes == 0) {
-                  cellColor = const Color(0xFFF1F3F4);
-                } else if (minutes < 5) {
-                  cellColor = const Color(0xFFA7FFEB);
-                } else if (minutes < 15) {
-                  cellColor = const Color(0xFF1DE9B6);
-                } else {
-                  cellColor = const Color(0xFF00BFA5);
-                }
-                currentColumnCells.add(_cell(cellColor));
-            }
+          final key =
+              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final minutes = widget.heatmapData[key] ?? 0;
+
+          Color cellColor;
+          if (minutes == 0) {
+            cellColor = const Color(0xFFF1F3F4);
+          } else if (minutes < 5) {
+            cellColor = const Color(0xFFA7FFEB);
+          } else if (minutes < 15) {
+            cellColor = const Color(0xFF1DE9B6);
+          } else {
+            cellColor = const Color(0xFF00BFA5);
+          }
+          currentColumnCells.add(_cell(cellColor));
         }
-        
-        if (currentColumnCells.length == 7) {
-            columns.add(Column(children: currentColumnCells));
-            currentColumnCells = [];
-        }
+      }
+
+      if (currentColumnCells.length == 7) {
+        columns.add(Column(children: currentColumnCells));
+        currentColumnCells = [];
+      }
     }
-    
+
     final width = columns.length * _columnWidth;
     return (columns, width);
   }
 
   Widget _buildMonthBlock(DateTime monthStart, List<Widget> columns) {
-    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           monthNames[monthStart.month - 1].toUpperCase(),
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 10, 
-            fontWeight: FontWeight.w900, 
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
             color: AppTheme.textHint,
             letterSpacing: 1.0,
           ),
@@ -526,34 +589,34 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
   }
 
   Widget _cell(Color c) => Container(
-    width: 14,
-    height: 14,
-    margin: const EdgeInsets.all(2),
-    decoration: BoxDecoration(
-      color: c, 
-      borderRadius: BorderRadius.circular(5),
-      boxShadow: c == Colors.transparent || c == const Color(0xFFF1F3F4) ? null : [
-        BoxShadow(
-          color: c.withValues(alpha: 0.25),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
+        width: 14,
+        height: 14,
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: c,
+          borderRadius: BorderRadius.circular(5),
+          boxShadow: c == Colors.transparent || c == const Color(0xFFF1F3F4)
+              ? null
+              : [
+                  BoxShadow(
+                    color: c.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
-      ],
-    ),
-  );
-  
+      );
+
   Widget _legendBox(Color c) => Container(
-    width: 14,
-    height: 14,
-    margin: const EdgeInsets.symmetric(horizontal: 2),
-    decoration: BoxDecoration(
-      color: c, 
-      borderRadius: BorderRadius.circular(4),
-    ),
-  );
+        width: 14,
+        height: 14,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: c,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
 }
-
-
 
 // --- TAJWID TAB ---
 class _TajwidTab extends StatelessWidget {
@@ -584,12 +647,21 @@ class _MasteryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = Color(int.parse(rule.backgroundHex.replaceFirst('#', '0xFF')));
+    final bgColor =
+        Color(int.parse(rule.backgroundHex.replaceFirst('#', '0xFF')));
     final fgColor = Color(int.parse(rule.colorHex.replaceFirst('#', '0xFF')));
-    
+
     // Level names
-    final levelNames = ['Unstarted', 'Novice', 'Apprentice', 'Practitioner', 'Adept', 'Master'];
-    final levelName = progress.level <= 5 ? levelNames[progress.level] : 'Expert';
+    final levelNames = [
+      'Unstarted',
+      'Novice',
+      'Apprentice',
+      'Practitioner',
+      'Adept',
+      'Master'
+    ];
+    final levelName =
+        progress.level <= 5 ? levelNames[progress.level] : 'Expert';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -663,11 +735,12 @@ class _MasteryCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: progress.level >= 5 
-                                ? AppTheme.primaryGreen.withValues(alpha: 0.1) 
-                                : AppTheme.divider.withValues(alpha: 0.5),
+                              color: progress.level >= 5
+                                  ? AppTheme.primaryGreen.withValues(alpha: 0.1)
+                                  : AppTheme.divider.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -675,7 +748,9 @@ class _MasteryCard extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
-                                color: progress.level >= 5 ? AppTheme.primaryGreen : AppTheme.textHint,
+                                color: progress.level >= 5
+                                    ? AppTheme.primaryGreen
+                                    : AppTheme.textHint,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -703,12 +778,16 @@ class _MasteryCard extends StatelessWidget {
                             ),
                           ),
                           FractionallySizedBox(
-                            widthFactor: progress.progressToNextLevel.clamp(0.05, 1.0),
+                            widthFactor:
+                                progress.progressToNextLevel.clamp(0.05, 1.0),
                             child: Container(
                               height: 8,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [fgColor.withValues(alpha: 0.7), fgColor],
+                                  colors: [
+                                    fgColor.withValues(alpha: 0.7),
+                                    fgColor
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(4),
                                 boxShadow: [
@@ -730,18 +809,16 @@ class _MasteryCard extends StatelessWidget {
                           Text(
                             '${(progress.progressToNextLevel * 100).toInt()}% towards Lev. ${progress.level + 1}',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10, 
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textHint
-                            ),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textHint),
                           ),
                           Text(
                             'Lvl ${progress.level}',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10, 
-                              fontWeight: FontWeight.w900, 
-                              color: fgColor
-                            ),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: fgColor),
                           ),
                         ],
                       ),
@@ -756,7 +833,8 @@ class _MasteryCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: AppTheme.backgroundCream.withValues(alpha: 0.5),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             child: Row(
               children: [
@@ -766,7 +844,8 @@ class _MasteryCard extends StatelessWidget {
                   label: const Text('LEARN'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.textSecondary,
-                    textStyle: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
+                    textStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
                 const Spacer(),
@@ -783,14 +862,16 @@ class _MasteryCard extends StatelessWidget {
                     backgroundColor: fgColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(
                     'PRACTICE',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w900),
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12, fontWeight: FontWeight.w900),
                   ),
                 ),
               ],
@@ -861,7 +942,9 @@ class _MasteryCard extends StatelessWidget {
                       ),
                       Text(
                         rule.category,
-                        style: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7)),
+                        style: TextStyle(
+                            color:
+                                AppTheme.textSecondary.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
@@ -876,17 +959,22 @@ class _MasteryCard extends StatelessWidget {
                   children: [
                     const Text(
                       'What is this rule?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       rule.description,
-                      style: const TextStyle(fontSize: 15, height: 1.5, color: AppTheme.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 32),
                     const Text(
                       'Example Word',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -919,11 +1007,13 @@ class _MasteryCard extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 child: const Text(
                   'GOT IT',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -965,13 +1055,15 @@ class _BadgesTab extends StatelessWidget {
                   : AppTheme.divider.withValues(alpha: 0.5),
               width: 1.5,
             ),
-            boxShadow: earned ? [
-              BoxShadow(
-                color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              )
-            ] : null,
+            boxShadow: earned
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    )
+                  ]
+                : null,
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -982,18 +1074,20 @@ class _BadgesTab extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: earned ? Colors.white : AppTheme.divider.withValues(alpha: 0.3),
+                    color: earned
+                        ? Colors.white
+                        : AppTheme.divider.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Text(
-                        badge.emoji,
-                        style: TextStyle(
-                          fontSize: 40,
-                          color: earned ? null : Colors.grey.withValues(alpha: 0.3),
-                        ),
+                      Icon(
+                        badge.icon,
+                        size: 40,
+                        color: earned
+                            ? AppTheme.accentAmber
+                            : Colors.grey.withValues(alpha: 0.3),
                       ),
                       if (!earned)
                         Container(
@@ -1002,7 +1096,8 @@ class _BadgesTab extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.8),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.lock_rounded, size: 16, color: AppTheme.textHint),
+                          child: const Icon(Icons.lock_rounded,
+                              size: 16, color: AppTheme.textHint),
                         ),
                     ],
                   ),
@@ -1022,9 +1117,12 @@ class _BadgesTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: earned ? AppTheme.primaryGreen.withValues(alpha: 0.1) : Colors.transparent,
+                    color: earned
+                        ? AppTheme.primaryGreen.withValues(alpha: 0.1)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -1059,3 +1157,280 @@ class _BadgesTab extends StatelessWidget {
   }
 }
 
+// --- TASBIH TAB ---
+class _TasbihTab extends StatefulWidget {
+  const _TasbihTab();
+
+  @override
+  State<_TasbihTab> createState() => _TasbihTabState();
+}
+
+class _TasbihTabState extends State<_TasbihTab> {
+  int _count = 0;
+  int _target = 33;
+
+  void _increment() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _count++;
+      if (_count == _target) {
+        HapticFeedback.heavyImpact();
+      }
+    });
+  }
+
+  void _reset() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _count = 0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.divider),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _target,
+                dropdownColor: AppTheme.backgroundSurface,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.primaryGreen),
+                style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
+                items: [33, 99, 1000].map((int value) {
+                  return DropdownMenuItem<int>(
+                    value: value,
+                    child: Text('Target: ${value == 1000 ? 'Infinity' : value}'),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _target = newValue;
+                      _count = 0;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 60),
+          GestureDetector(
+            onTap: _increment,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primaryGreen.withValues(alpha: 0.2),
+                    AppTheme.primaryGreen.withValues(alpha: 0.05),
+                  ],
+                ),
+                border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.5), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '$_count',
+                  style: GoogleFonts.outfit(
+                    fontSize: 80,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 60),
+          IconButton(
+            onPressed: _reset,
+            icon: const Icon(Icons.refresh_rounded),
+            iconSize: 40,
+            color: AppTheme.textHint,
+            tooltip: 'Reset',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- DUAS TAB ---
+class _DuasTab extends StatelessWidget {
+  const _DuasTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final duas = [
+      {
+        'title': 'Waking Up',
+        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
+        'translation': 'All praise is for Allah who gave us life after having taken it from us and unto Him is the resurrection.',
+      },
+      {
+        'title': 'Before Sleeping',
+        'arabic': 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ',
+        'translation': 'In Your name my Lord, I lie down and in Your name I rise.',
+      },
+      {
+        'title': 'Entering Mosque',
+        'arabic': 'اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ',
+        'translation': 'O Allah, open the doors of Your mercy for me.',
+      },
+      {
+        'title': 'Leaving Mosque',
+        'arabic': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ',
+        'translation': 'O Allah, I ask You from Your favor.',
+      },
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: duas.length,
+      itemBuilder: (context, index) {
+        final dua = duas[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.cardWhite,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dua['title']!,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  dua['arabic']!,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontFamily: 'AmiriQuran',
+                    fontSize: 24,
+                    color: AppTheme.primaryGreen,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                dua['translation']!,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// --- EVENTS TAB ---
+class _EventsTab extends StatelessWidget {
+  const _EventsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final events = [
+      {'name': 'Ramadan Begins', 'date': '1st Ramadan'},
+      {'name': 'Eid al-Fitr', 'date': '1st Shawwal'},
+      {'name': 'Arafah', 'date': '9th Dhu al-Hijjah'},
+      {'name': 'Eid al-Adha', 'date': '10th Dhu al-Hijjah'},
+      {'name': 'Islamic New Year', 'date': '1st Muharram'},
+      {'name': 'Ashura', 'date': '10th Muharram'},
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: events.length,
+      itemBuilder: (context, index) {
+        final event = events[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.event_rounded, color: AppTheme.primaryGreen),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event['name']!,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      event['date']!,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        color: AppTheme.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

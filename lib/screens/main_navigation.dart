@@ -35,7 +35,7 @@ class _MainNavigationState extends State<MainNavigation>
     _NavItem(icon: Icons.home_rounded, label: 'Home'),
     _NavItem(icon: Icons.menu_book_rounded, label: 'Quran'),
     _NavItem(icon: Icons.mic_rounded, label: 'Practice'),
-    _NavItem(icon: Icons.bar_chart_rounded, label: 'Progress'),
+    _NavItem(icon: Icons.mosque_rounded, label: 'Deen Hub'),
     _NavItem(icon: Icons.school_rounded, label: 'Sheikhs'),
   ];
 

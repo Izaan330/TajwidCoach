@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
@@ -12,6 +13,7 @@ import 'quran/surah_detail_screen.dart';
 import 'store/paywall_screen.dart';
 import 'settings/settings_screen.dart';
 import 'progress/progress_screen.dart';
+import '../services/quran_api_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -34,7 +36,7 @@ class HomeScreen extends StatelessWidget {
         slivers: [
           // ─── Collapsible Hero App Bar ────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 140,
+            expandedHeight: 160,
             floating: true,
             pinned: true,
             snap: false,
@@ -82,7 +84,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Text('🔥', style: TextStyle(fontSize: 16)),
+                      const Icon(Icons.local_fire_department_rounded, color: AppTheme.accentAmber, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         '${streak.currentStreak}',
@@ -111,18 +113,24 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 80, 20, 16),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Assalamu Alaikum 🌙',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const Row(
+                        children: [
+                          Text(
+                            'Assalamu Alaikum',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 14),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -166,6 +174,11 @@ class HomeScreen extends StatelessWidget {
                     ),
                   const SizedBox(height: 20),
 
+                  // Verse of the Day
+                  if (quran.verseOfTheDay != null)
+                    _VerseOfTheDayCard(ayah: quran.verseOfTheDay!),
+                  const SizedBox(height: 20),
+
                   // Resume Reading
                   if (quran.lastRead != null) ...[
                     _ResumeReadingCard(lastRead: quran.lastRead!),
@@ -174,7 +187,9 @@ class HomeScreen extends StatelessWidget {
 
                   // Streak Section
                   _SectionHeader(
-                    title: '🔥 Your Streak',
+                    title: 'Your Streak',
+                    icon: Icons.local_fire_department_rounded,
+                    iconColor: AppTheme.accentAmber,
                     action: 'View All',
                     onActionTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ProgressScreen()),
@@ -187,7 +202,9 @@ class HomeScreen extends StatelessWidget {
                   // Weak Rules
                   if (user?.weakRules.isNotEmpty == true) ...[
                     const _SectionHeader(
-                      title: '🎯 Focus Areas',
+                      title: 'Focus Areas',
+                      icon: Icons.my_location_rounded,
+                      iconColor: AppTheme.qalqalahRed,
                       action: 'Practice Now',
                     ),
                     const SizedBox(height: 12),
@@ -223,11 +240,15 @@ class HomeScreen extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final IconData? icon;
+  final Color? iconColor;
   final String action;
   final VoidCallback? onActionTap;
 
   const _SectionHeader({
     required this.title,
+    this.icon,
+    this.iconColor,
     this.action = '',
     this.onActionTap,
   });
@@ -237,13 +258,21 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: iconColor ?? AppTheme.textPrimary, size: 24),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
         if (action.isNotEmpty)
           TextButton(
@@ -334,13 +363,20 @@ class _DailyChallengeCardState extends State<_DailyChallengeCard>
                         color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: const Text(
-                      '⚡ Daily Challenge',
-                      style: TextStyle(
-                        color: AppTheme.primaryGreen,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bolt_rounded, color: AppTheme.primaryGreen, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Daily Challenge',
+                          style: TextStyle(
+                            color: AppTheme.primaryGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -374,13 +410,20 @@ class _DailyChallengeCardState extends State<_DailyChallengeCard>
                         ),
                       ],
                     ),
-                    child: const Text(
-                      '🎤 Practice Now',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.mic_rounded, color: Colors.black, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Practice Now',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -411,7 +454,7 @@ class _PulsingBookIcon extends StatelessWidget {
             color: AppTheme.primaryGreen.withValues(alpha: 0.15)),
       ),
       child: const Center(
-        child: Text('📖', style: TextStyle(fontSize: 40)),
+        child: Icon(Icons.auto_stories_rounded, color: AppTheme.primaryGreen, size: 36),
       ),
     );
   }
@@ -477,16 +520,16 @@ class _StreakCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _StreakStat('Current', '${streak.currentStreak}', '🔥',
+              _StreakStat('Current', '${streak.currentStreak}', Icons.local_fire_department_rounded,
                   AppTheme.accentAmber),
               _vDivider(),
-              _StreakStat('Best', '${streak.longestStreak}', '🏆',
+              _StreakStat('Best', '${streak.longestStreak}', Icons.emoji_events_rounded,
                   AppTheme.premiumGold),
               _vDivider(),
-              _StreakStat('Freezes', '${streak.streakFreezes}', '❄️',
+              _StreakStat('Freezes', '${streak.streakFreezes}', Icons.ac_unit_rounded,
                   AppTheme.info),
               _vDivider(),
-              _StreakStat('Badges', '${streak.earnedBadges.length}', '🎖️',
+              _StreakStat('Badges', '${streak.earnedBadges.length}', Icons.military_tech_rounded,
                   AppTheme.primaryGreen),
             ],
           ),
@@ -536,15 +579,15 @@ class _StreakCard extends StatelessWidget {
 class _StreakStat extends StatelessWidget {
   final String label;
   final String value;
-  final String emoji;
+  final IconData icon;
   final Color color;
-  const _StreakStat(this.label, this.value, this.emoji, this.color);
+  const _StreakStat(this.label, this.value, this.icon, this.color);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 22)),
+        Icon(icon, color: color, size: 28),
         const SizedBox(height: 6),
         Text(
           value,
@@ -694,8 +737,8 @@ class _PremiumBannerState extends State<_PremiumBanner>
             ShaderMask(
               shaderCallback: (bounds) =>
                   AppTheme.goldAccentGradient.createShader(bounds),
-              child: const Text('👑',
-                  style: TextStyle(fontSize: 34, color: Colors.white)),
+              child: const Icon(Icons.workspace_premium_rounded,
+                  size: 42, color: Colors.white),
             ),
             const SizedBox(width: 16),
             const Expanded(
@@ -845,6 +888,199 @@ class _ResumeReadingCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Verse of the Day Card
+// ─────────────────────────────────────────────────────────────────────────────
+class _VerseOfTheDayCard extends StatefulWidget {
+  final AyahModel ayah;
+  const _VerseOfTheDayCard({required this.ayah});
+
+  @override
+  State<_VerseOfTheDayCard> createState() => _VerseOfTheDayCardState();
+}
+
+class _VerseOfTheDayCardState extends State<_VerseOfTheDayCard> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggleAudio() async {
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
+    } else {
+      final url = QuranApiService.getAudioUrl('ar.alafasy', widget.ayah.globalNumber);
+      try {
+        await _audioPlayer.setUrl(url);
+        setState(() => _isPlaying = true);
+        _audioPlayer.play();
+        _audioPlayer.playerStateStream.listen((state) {
+          if (state.processingState == ProcessingState.completed) {
+            if (mounted) setState(() => _isPlaying = false);
+          }
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not play audio')),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quran = context.read<QuranProvider>();
+    final surah = quran.surahs.firstWhere((s) => s.number == widget.ayah.surahNumber);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0D1F3C), Color(0xFF080E1A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.info.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background Pattern (Geometric)
+          const Positioned(
+            right: -20,
+            top: -20,
+            child: Opacity(
+              opacity: 0.05,
+              child: Icon(Icons.mosque_rounded, size: 150, color: AppTheme.info),
+            ),
+          ),
+          
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.info.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.info.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: AppTheme.info, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            'VERSE OF THE DAY',
+                            style: TextStyle(
+                              color: AppTheme.info,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _toggleAudio,
+                      icon: Icon(
+                        _isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                        color: AppTheme.info,
+                        size: 32,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Arabic Text
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    widget.ayah.arabicText,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(
+                      fontFamily: 'AmiriQuran',
+                      fontSize: 22,
+                      height: 1.8,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Translation
+                Text(
+                  widget.ayah.translationText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${surah.name} • ${widget.ayah.ayahNumber}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.info,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => SurahDetailScreen(
+                            surah: surah,
+                            initialAyah: widget.ayah.ayahNumber,
+                          ),
+                        ));
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                      label: const Text('Read Full Surah'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.info,
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

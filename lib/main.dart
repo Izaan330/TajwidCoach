@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/streak_provider.dart';
 import 'providers/premium_provider.dart';
@@ -24,8 +25,12 @@ void main() async {
     // Initialize Notifications
     final messagingService = FirebaseMessagingService();
     await messagingService.init();
+
+    final notificationService = NotificationService();
+    await notificationService.init();
+    await notificationService.scheduleDailyVerseNotification();
   } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
+    debugPrint('Firebase or Notification initialization failed: $e');
     debugPrint('App will run in Offline/Demo mode.');
   }
 

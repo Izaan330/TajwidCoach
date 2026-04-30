@@ -101,11 +101,11 @@ class _SheikhProfileScreenState extends State<SheikhProfileScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _Stat('⭐', widget.sheikh.rating.toStringAsFixed(1), 'Rating'),
+                        _Stat(Icons.star_rounded, widget.sheikh.rating.toStringAsFixed(1), 'Rating', AppTheme.accentAmber),
                         _div(),
-                        _Stat('👥', '${widget.sheikh.totalStudents}', 'Students'),
+                        _Stat(Icons.people_rounded, '${widget.sheikh.totalStudents}', 'Students', AppTheme.primaryGreen),
                         _div(),
-                        _Stat('📍', widget.sheikh.city, 'City'),
+                        _Stat(Icons.location_on_rounded, widget.sheikh.city, 'City', AppTheme.qalqalahRed),
                       ],
                     ),
                   ),
@@ -172,7 +172,7 @@ class _SheikhProfileScreenState extends State<SheikhProfileScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Text('👥', style: TextStyle(fontSize: 24)),
+                          const Icon(Icons.groups_rounded, size: 28, color: AppTheme.idghamBlue),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +241,7 @@ class _SheikhProfileScreenState extends State<SheikhProfileScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Text('📜', style: TextStyle(fontSize: 24)),
+                              const Icon(Icons.workspace_premium_rounded, size: 28, color: Colors.white),
                               const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,16 +376,17 @@ class _SheikhProfileScreenState extends State<SheikhProfileScreen> {
 }
 
 class _Stat extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String value;
   final String label;
-  const _Stat(this.emoji, this.value, this.label);
+  final Color iconColor;
+  const _Stat(this.icon, this.value, this.label, this.iconColor);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
+        Icon(icon, size: 22, color: iconColor),
         const SizedBox(height: 4),
         Text(
           value,

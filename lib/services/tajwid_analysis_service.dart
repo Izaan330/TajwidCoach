@@ -213,11 +213,11 @@ class TajwidAnalysisService {
   }
 
   static String _getEncouragement(int score) {
-    if (score >= 90) return '🌟 MashaAllah! Your recitation is beautiful!';
-    if (score >= 80) return '✨ Excellent work! You\'re almost there!';
-    if (score >= 70) return '💪 Great effort! Practice makes perfect!';
-    if (score >= 60) return '🤲 Keep going! Every practice brings you closer!';
-    return '📖 "Indeed, the one who recites Quran and is expert in it will be with the noble obedient angels." - Sahih Muslim';
+    if (score >= 90) return 'MashaAllah! Your recitation is beautiful!';
+    if (score >= 80) return 'Excellent work! You\'re almost there!';
+    if (score >= 70) return 'Great effort! Practice makes perfect!';
+    if (score >= 60) return 'Keep going! Every practice brings you closer!';
+    return '"Indeed, the one who recites Quran and is expert in it will be with the noble obedient angels." - Sahih Muslim';
   }
 }
 

@@ -64,18 +64,43 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (v) => settings.setShowTranslation(v),
           ),
 
-          const SizedBox(height: 4),
-          // Note about Tajweed mode
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Text(
-              '💡 Tajweed colors activate automatically in 🎨 Tajweed mode.',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary.withAlpha(180),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+
+          const SizedBox(height: 16),
+          // ───── Support & Community ─────
+          const _SectionHeader(title: 'Support & Community'),
+          const SizedBox(height: 8),
+
+          _SettingsCard(
+            icon: Icons.feedback_rounded,
+            title: 'Feedback',
+            subtitle: 'Send us your thoughts and suggestions',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Feedback feature coming soon')),
+              );
+            },
+          ),
+
+          _SettingsCard(
+            icon: Icons.star_rate_rounded,
+            title: 'Rate Us',
+            subtitle: 'Love the app? Leave a review',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Rate us feature coming soon')),
+              );
+            },
+          ),
+
+          _SettingsCard(
+            icon: Icons.share_rounded,
+            title: 'Share',
+            subtitle: 'Share TajwidCoach with friends',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Share feature coming soon')),
+              );
+            },
           ),
 
           const SizedBox(height: 16),
@@ -116,14 +141,39 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 32),
           // Info
           Center(
-            child: Text(
-              'TajwidCoach v1.0.0+1\nMade with ❤️ for the Ummah',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary.withAlpha(180),
-                fontStyle: FontStyle.italic,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  'TajwidCoach v1.0.0+1',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary.withAlpha(180),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Made with ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary.withAlpha(180),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const Icon(Icons.favorite_rounded, color: AppTheme.qalqalahRed, size: 14),
+                    Text(
+                      ' for the Ummah',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary.withAlpha(180),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -210,34 +260,36 @@ class _ScriptPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Choose Quran Script',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Switch between rendering modes. Tajweed mode adds color-coding.',
-            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          for (final script in QuranScript.values) ...[
-            _ScriptOption(
-              script: script,
-              isSelected: settings.quranScript == script,
-              onTap: () {
-                settings.setQuranScript(script);
-                Navigator.pop(context);
-              },
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose Quran Script',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
+            const Text(
+              'Switch between rendering modes. Tajweed mode adds color-coding.',
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            for (final script in QuranScript.values) ...[
+              _ScriptOption(
+                script: script,
+                isSelected: settings.quranScript == script,
+                onTap: () {
+                  settings.setQuranScript(script);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -265,14 +317,35 @@ class _ScriptOption extends StatelessWidget {
     }
   }
 
+  String get _fontFamily {
+    switch (script) {
+      case QuranScript.indoPak:
+        return 'IndoPak';
+      case QuranScript.tajweed:
+      case QuranScript.mushaf:
+        return 'UthmanicHafs';
+    }
+  }
+
   String get _label {
     switch (script) {
       case QuranScript.mushaf:
-        return '🕌 Mushaf (QCF)';
+        return 'Mushaf (QCF)';
       case QuranScript.indoPak:
-        return '🔠 Indo-Pak Script';
+        return 'Indo-Pak Script';
       case QuranScript.tajweed:
-        return '🎨 Tajweed Colors';
+        return 'Tajweed Colors';
+    }
+  }
+
+  IconData get _iconData {
+    switch (script) {
+      case QuranScript.mushaf:
+        return Icons.auto_stories_rounded;
+      case QuranScript.indoPak:
+        return Icons.translate_rounded;
+      case QuranScript.tajweed:
+        return Icons.color_lens_rounded;
     }
   }
 
@@ -289,7 +362,6 @@ class _ScriptOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -298,15 +370,28 @@ class _ScriptOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppTheme.primaryGreen.withAlpha(20)
-              : Colors.white,
+              : AppTheme.backgroundElevated,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryGreen : Colors.grey.shade200,
+            color: isSelected ? AppTheme.primaryGreen : AppTheme.divider,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected ? AppTheme.primaryGreen.withAlpha(30) : AppTheme.backgroundSurface,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                _iconData,
+                color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +418,7 @@ class _ScriptOption extends StatelessWidget {
                     _arabicSample,
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
-                      fontFamily: settings.defaultFontFamily,
+                      fontFamily: _fontFamily,
                       fontSize: 18,
                       color: AppTheme.textPrimary,
                     ),
@@ -365,41 +450,43 @@ class _TranslationPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Choose Translation',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 16),
-          for (final opt in _options) ...[
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              tileColor: settings.translationLanguage == opt.$1
-                  ? AppTheme.primaryGreen.withAlpha(20)
-                  : null,
-              title: Text(opt.$2,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(opt.$3),
-              trailing: settings.translationLanguage == opt.$1
-                  ? const Icon(Icons.check_circle_rounded,
-                      color: AppTheme.primaryGreen)
-                  : null,
-              onTap: () {
-                settings.setTranslationLanguage(opt.$1);
-                Navigator.pop(context);
-              },
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose Translation',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
+            for (final opt in _options) ...[
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tileColor: settings.translationLanguage == opt.$1
+                    ? AppTheme.primaryGreen.withAlpha(20)
+                    : null,
+                title: Text(opt.$2,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(opt.$3),
+                trailing: settings.translationLanguage == opt.$1
+                    ? const Icon(Icons.check_circle_rounded,
+                        color: AppTheme.primaryGreen)
+                    : null,
+                onTap: () {
+                  settings.setTranslationLanguage(opt.$1);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 4),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

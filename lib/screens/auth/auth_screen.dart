@@ -150,10 +150,12 @@ class _AuthScreenState extends State<AuthScreen>
           ElevatedButton(
             onPressed: () async {
               final email = controller.text.trim();
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               await context.read<AuthProvider>().sendPasswordResetEmail(email);
               if (!mounted) return;
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              navigator.pop();
+              messenger.showSnackBar(const SnackBar(
                 content: Text('Reset link sent! Please check your email.'),
                 backgroundColor: AppTheme.primaryGreen,
               ));
@@ -247,7 +249,7 @@ class _AuthScreenState extends State<AuthScreen>
             ],
           ),
           child: const Center(
-            child: Text('🌙', style: TextStyle(fontSize: 48)),
+            child: Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 54),
           ),
         ),
         const SizedBox(height: 20),
@@ -300,7 +302,7 @@ class _AuthScreenState extends State<AuthScreen>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 child: Column(
-                  key: ValueKey('${_codeSent}_${_isEmailAuth}_${_isSignUp}'),
+                  key: ValueKey('${_codeSent}_${_isEmailAuth}_$_isSignUp'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(

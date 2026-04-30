@@ -1,17 +1,17 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class StreakBadge {
   final String id;
-  final String emoji;
+  final IconData icon;
   final String name;
   final int requiredDays;
   final String description;
 
   const StreakBadge({
     required this.id,
-    required this.emoji,
+    required this.icon,
     required this.name,
     required this.requiredDays,
     required this.description,
@@ -22,35 +22,35 @@ class StreakService {
   static const List<StreakBadge> allBadges = [
     StreakBadge(
       id: 'first_day',
-      emoji: '🌱',
+      icon: Icons.park_rounded,
       name: 'First Step',
       requiredDays: 1,
       description: 'Started your Quran journey',
     ),
     StreakBadge(
       id: 'week',
-      emoji: '🔥',
+      icon: Icons.local_fire_department_rounded,
       name: 'Week Warrior',
       requiredDays: 7,
       description: '7 days of consistent practice',
     ),
     StreakBadge(
       id: 'month',
-      emoji: '🌟',
+      icon: Icons.star_rounded,
       name: 'Month Master',
       requiredDays: 30,
       description: '30 days of dedication',
     ),
     StreakBadge(
       id: 'hundred',
-      emoji: '🕌',
+      icon: Icons.mosque_rounded,
       name: 'Century Prophet',
       requiredDays: 100,
       description: '100 days — true devotion',
     ),
     StreakBadge(
       id: 'year',
-      emoji: '👑',
+      icon: Icons.workspace_premium_rounded,
       name: 'Hafiz Journey',
       requiredDays: 365,
       description: '365 days — a full year of Quran',

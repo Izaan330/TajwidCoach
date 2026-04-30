@@ -4,6 +4,7 @@ import '../models/surah_model.dart';
 import '../models/sheikh_model.dart';
 import '../models/last_read_model.dart';
 import '../services/quran_api_service.dart';
+import '../services/quran_database_helper.dart';
 
 /// Standard Madani Mushaf starting pages for all 114 surahs.
 const Map<int, int> _surahStartPages = {
@@ -36,6 +37,7 @@ class QuranProvider extends ChangeNotifier {
   int _currentPage = 1;
   bool _isUIVisible = true;
   LastReadModel? _lastRead;
+  AyahModel? _verseOfTheDay;
 
   List<SurahModel> get surahs => _searchQuery.isEmpty
       ? _surahs
@@ -49,6 +51,7 @@ class QuranProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   bool get isUIVisible => _isUIVisible;
   LastReadModel? get lastRead => _lastRead;
+  AyahModel? get verseOfTheDay => _verseOfTheDay;
 
   void toggleUI() {
     _isUIVisible = !_isUIVisible;
@@ -139,7 +142,28 @@ class QuranProvider extends ChangeNotifier {
   void init() {
     _surahs = QuranApiService.getAllSurahs();
     loadLastRead();
+    fetchVerseOfTheDay();
     notifyListeners();
+  }
+
+  Future<void> fetchVerseOfTheDay() async {
+    try {
+      final now = DateTime.now();
+      final globalNumber = getVerseIndexForDate(now);
+
+      _verseOfTheDay = await QuranDatabaseHelper.instance.getAyahByGlobalNumber(globalNumber);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error fetching Verse of the Day: $e");
+    }
+  }
+
+  /// Calculates a seeded random verse index (1-6236) for a given date.
+  static int getVerseIndexForDate(DateTime date) {
+    final seed = date.year * 10000 + date.month * 100 + date.day;
+    // Simple LCG (Linear Congruential Generator) for consistent cross-platform random
+    final random = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return (random % 6236) + 1;
   }
 
   Future<void> loadLastRead() async {

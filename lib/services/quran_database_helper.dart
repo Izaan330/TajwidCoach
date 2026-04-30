@@ -141,6 +141,20 @@ class QuranDatabaseHelper {
     return null;
   }
 
+  /// Fetch a specific Ayah by its global number (1-6236)
+  Future<AyahModel?> getAyahByGlobalNumber(int globalNumber) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'ayats',
+      where: 'global_number = ?',
+      whereArgs: [globalNumber],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return AyahModel.fromMap(maps[0]);
+  }
+
   /// Close the database connection
   Future close() async {
     final db = await database;
