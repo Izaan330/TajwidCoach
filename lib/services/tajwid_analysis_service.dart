@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../models/tajwid_rule_model.dart';
 import '../utils/tajwid_rules_data.dart';
 import 'tajwid_api_service.dart';
+import '../providers/premium_provider.dart';
 
 /// AI Tajwid analysis service.
 /// Uses TajwidApiService for cloud ML but falls back to Mock for dev.
@@ -53,35 +54,55 @@ class TajwidAnalysisService {
     File? audioFile,
     String? targetRuleId,
     List<String>? existingWeakRules,
+    bool isPremium = false,
   }) async {
     // If we have a file, try the real API
     if (audioFile != null) {
       try {
-        return await _apiService.analyzeAudio(
+        final result = await _apiService.analyzeAudio(
           audioFile: audioFile,
           ayahReference: ayahReference,
           referenceText: referenceText,
           targetRuleId: targetRuleId,
         );
+
+        if (isPremium) return result;
+
+        // Filter for free users
+        final filteredScores = result.ruleScores
+            .where((s) => PremiumProvider.freeRuleIds.contains(s.ruleId))
+            .toList();
+        
+        return TajwidAnalysisResult(
+          overallScore: result.overallScore,
+          feedback: result.feedback,
+          grade: result.grade,
+          ruleScores: filteredScores,
+          weakWords: result.weakWords, // Keep weak words as hint
+          weakRuleIds: result.weakRuleIds.where((id) => PremiumProvider.freeRuleIds.contains(id)).toList(),
+          excellentRuleIds: result.excellentRuleIds.where((id) => PremiumProvider.freeRuleIds.contains(id)).toList(),
+          encouragement: result.encouragement,
+          lockedRulesCount: result.ruleScores.length - filteredScores.length,
+        );
       } catch (e) {
         debugPrint('Real ML API failed: $e');
         
-        String errorMessage = 'Connection failed. Please ensure the AI server is running and your phone is on the same Wi-Fi.';
-        String encouragement = 'Copy the error above or try again.';
+        String errorMessage = 'We encountered a connection issue. Please ensure the AI server is accessible and your device is connected to the internet.';
+        String encouragement = 'Please check your connection and try again.';
         
         if (e is DioException) {
           if (e.type == DioExceptionType.receiveTimeout) {
-            errorMessage = 'The server is taking too long to process this long recording. Try breaking it into shorter segments or check your internet speed.';
-            encouragement = 'Try a shorter verse or check your server logs.';
+            errorMessage = 'The analysis took longer than expected. Try a shorter recording or check your network speed.';
+            encouragement = 'Try a smaller verse or a faster connection.';
           } else if (e.type == DioExceptionType.connectionTimeout) {
-            errorMessage = 'Could not connect to the AI server. Please check your network connection and server IP address.';
+            errorMessage = 'Could not reach the AI server. Please verify your network and server settings.';
           }
         }
 
         return TajwidAnalysisResult(
           overallScore: 0,
-          feedback: '$errorMessage\n\nDetails: $e',
-          grade: 'Error',
+          feedback: errorMessage, // Removed raw details from user-facing feedback
+          grade: 'Reviewing...',
           ruleScores: [],
           weakWords: [],
           weakRuleIds: [],
@@ -151,19 +172,33 @@ class TajwidAnalysisService {
             ruleScores.length;
     final overallScore = ((baseScore + avgRuleScore) ~/ 2).clamp(30, 100);
 
+    // Filter results if not premium
+    int lockedRulesCount = 0;
+    List<RuleScore> finalScores = ruleScores;
+    List<String> finalWeakIds = weakRuleIds;
+    List<String> finalExcellentIds = excellentRuleIds;
+
+    if (!isPremium) {
+      finalScores = ruleScores.where((s) => PremiumProvider.freeRuleIds.contains(s.ruleId)).toList();
+      finalWeakIds = weakRuleIds.where((id) => PremiumProvider.freeRuleIds.contains(id)).toList();
+      finalExcellentIds = excellentRuleIds.where((id) => PremiumProvider.freeRuleIds.contains(id)).toList();
+      lockedRulesCount = ruleScores.length - finalScores.length;
+    }
+
     // Generate weak words (Arabic examples)
     final weakWords =
-        weakRuleIds.isNotEmpty ? _generateWeakWords(weakRuleIds) : <String>[];
+        finalWeakIds.isNotEmpty ? _generateWeakWords(finalWeakIds) : <String>[];
 
     return TajwidAnalysisResult(
       overallScore: overallScore,
-      feedback: _buildFeedback(overallScore, weakRuleIds),
+      feedback: _buildFeedback(overallScore, finalWeakIds),
       grade: _getGrade(overallScore),
-      ruleScores: ruleScores,
+      ruleScores: finalScores,
       weakWords: weakWords,
-      weakRuleIds: weakRuleIds,
-      excellentRuleIds: excellentRuleIds,
+      weakRuleIds: finalWeakIds,
+      excellentRuleIds: finalExcellentIds,
       encouragement: _getEncouragement(overallScore),
+      lockedRulesCount: lockedRulesCount,
     );
   }
 

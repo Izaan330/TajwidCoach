@@ -33,6 +33,7 @@ class TajwidAnalysisResult {
   final List<String> weakRuleIds;
   final List<String> excellentRuleIds;
   final String encouragement;
+  final int lockedRulesCount;
 
   const TajwidAnalysisResult({
     required this.overallScore,
@@ -43,6 +44,7 @@ class TajwidAnalysisResult {
     required this.weakRuleIds,
     required this.excellentRuleIds,
     required this.encouragement,
+    this.lockedRulesCount = 0,
   });
 
   factory TajwidAnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -57,6 +59,7 @@ class TajwidAnalysisResult {
       weakRuleIds: List<String>.from(json['weak_rule_ids'] ?? []),
       excellentRuleIds: List<String>.from(json['excellent_rule_ids'] ?? []),
       encouragement: json['encouragement'] ?? '',
+      lockedRulesCount: json['locked_rules_count'] ?? 0,
     );
   }
 
@@ -69,6 +72,7 @@ class TajwidAnalysisResult {
         'weak_rule_ids': weakRuleIds,
         'excellent_rule_ids': excellentRuleIds,
         'encouragement': encouragement,
+        'locked_rules_count': lockedRulesCount,
       };
 
   String get letterGrade {

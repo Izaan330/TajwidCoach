@@ -50,7 +50,7 @@ class StoreScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Unlock the full Quran experience\nwith AI + Sheikh guidance',
+                    'AI coaching + offline access + ad-free\nElevate your Quran journey',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, height: 1.5),
                   ),
@@ -117,7 +117,7 @@ class StoreScreen extends StatelessWidget {
               (plan) => _PlanCard(
                 plan: plan,
                 isPurchased:
-                    isPremium && premiumProvider.currentPlan == plan.id,
+                    isPremium && premiumProvider.currentPlanId == plan.id,
                 isLoading: isLoading,
                 onPurchase: () => premiumProvider.purchasePlan(plan.id),
               ),
@@ -490,16 +490,16 @@ class _FeatureComparisonTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const features = [
-      ['Juz 30 access', '✅', '✅'],
-      ['Full Quran (114 Surahs)', '🔒', '✅'],
-      ['Qaris available', '1', '15'],
-      ['Tajwid rules analyzed', '10', '25+'],
+      ['Full Quran (114 Surahs)', '✅', '✅'],
+      ['Qaris available', '3', '15'],
+      ['Tajwid rules analyzed', '5', '25+'],
       ['Word-level feedback', '🔒', '✅'],
       ['Hifz Mode', '🔒', '✅'],
       ['Offline audio', '🔒', '✅'],
-      ['Sheikh sessions', '🔒', '✅'],
-      ['Ijazah certificate', '🔒', '✅'],
-      ['Ads', '❌ Yes', '✅ None'],
+      ['Ad-free experience', '🔒', '✅'],
+      ['Sheikh waveform compare', '🔒', '✅'],
+      ['Premium Mushaf themes', '🔒', '✅'],
+      ['Extra streak freezes', '🔒', '✅'],
     ];
 
     return Container(

@@ -5,6 +5,7 @@ import '../../models/surah_model.dart';
 import '../../providers/quran_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/premium_provider.dart';
+import '../../services/offline_service.dart';
 import '../../utils/quran_constants.dart';
 import '../../models/last_read_model.dart';
 import 'surah_detail_screen.dart';
@@ -148,7 +149,7 @@ class _QariSelector extends StatelessWidget {
           final qari = QuranConstants.qaris[index];
           final id = qari['id']!;
           final isSelected = id == selectedQariId;
-          final isLocked = !isPremium && index >= 7; // First 7 Qaris are free for testing
+          final isLocked = !isPremium && !PremiumProvider.freeQariIds.contains(id);
 
           return GestureDetector(
             onTap: isLocked
@@ -200,7 +201,7 @@ class _QariSelector extends StatelessWidget {
           ],
         ),
         content: const Text(
-          'Access all 15 world-class Qaris with Premium. Upgrade for just ₹199/year!',
+          'Unlock all 15 world-class Qaris with Premium. Upgrade for just ₹199/year!',
         ),
         actions: [
           TextButton(
@@ -246,8 +247,7 @@ class _SurahList extends StatelessWidget {
 
         final surahIndex = lastRead != null ? index - 1 : index;
         final surah = surahs[surahIndex];
-        const isLocked = false;
-        return _SurahTile(surah: surah, isLocked: isLocked);
+        return _SurahTile(surah: surah);
       },
     );
   }
@@ -358,9 +358,8 @@ class _LastReadCard extends StatelessWidget {
 
 class _SurahTile extends StatelessWidget {
   final SurahModel surah;
-  final bool isLocked;
 
-  const _SurahTile({required this.surah, required this.isLocked});
+  const _SurahTile({required this.surah});
 
   @override
   Widget build(BuildContext context) {
@@ -398,22 +397,59 @@ class _SurahTile extends StatelessWidget {
           '${surah.type} • ${surah.ayahCount} Ayahs • Juz ${surah.juzNumber}',
           style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
         ),
-        trailing: Text(
-          surah.arabicName,
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'AmiriQuran',
-            color: AppTheme.primaryGreen,
-            fontWeight: FontWeight.w500,
-          ),
-          textDirection: TextDirection.rtl,
-        ),
+        trailing: _SurahAction(surah: surah),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => SurahDetailScreen(surah: surah)),
           );
         },
       ),
+    );
+  }
+}
+
+class _SurahAction extends StatelessWidget {
+  final SurahModel surah;
+  const _SurahAction({required this.surah});
+
+  @override
+  Widget build(BuildContext context) {
+    final offline = context.watch<OfflineService>();
+    final premium = context.watch<PremiumProvider>();
+    final isDownloaded = offline.isDownloaded(surah.number);
+    final progress = offline.downloadProgress[surah.number.toString()];
+
+    if (progress != null) {
+      return SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          value: progress,
+          strokeWidth: 2,
+          color: AppTheme.primaryGreen,
+        ),
+      );
+    }
+
+    if (isDownloaded) {
+      return const Icon(Icons.offline_pin_rounded, color: AppTheme.primaryGreen, size: 24);
+    }
+
+    return IconButton(
+      icon: const Icon(Icons.download_for_offline_rounded, color: AppTheme.textHint, size: 24),
+      onPressed: () {
+        if (!premium.isPremium) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+          return;
+        }
+        
+        // Mock download - in real app would fetch all ayah audio URLs
+        offline.downloadSurah(surah.number, [
+          'https://cdn.islamic.network/quran/audio/128/ar.alafasy/${surah.number}001.mp3'
+        ]);
+      },
     );
   }
 }

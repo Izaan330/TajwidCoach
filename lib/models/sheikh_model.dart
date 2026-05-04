@@ -1,3 +1,5 @@
+enum SheikhTier { basic, pro, madrasa }
+
 class SheikhModel {
   final String id;
   final String name;
@@ -20,6 +22,7 @@ class SheikhModel {
   final int pricePerSession; // INR
   final bool offersGroupClasses;
   final int groupClassSize; // Max 5
+  final SheikhTier tier;
 
   const SheikhModel({
     required this.id,
@@ -43,6 +46,7 @@ class SheikhModel {
     this.pricePerSession = 0,
     this.offersGroupClasses = false,
     this.groupClassSize = 5,
+    this.tier = SheikhTier.basic,
   });
 
   factory SheikhModel.fromMap(Map<String, dynamic> map) {
@@ -68,6 +72,10 @@ class SheikhModel {
       pricePerSession: map['pricePerSession'] ?? 0,
       offersGroupClasses: map['offersGroupClasses'] ?? false,
       groupClassSize: map['groupClassSize'] ?? 5,
+      tier: SheikhTier.values.firstWhere(
+        (t) => t.name == (map['tier'] ?? 'basic'),
+        orElse: () => SheikhTier.basic,
+      ),
     );
   }
 
@@ -93,6 +101,7 @@ class SheikhModel {
     'pricePerSession': pricePerSession,
     'offersGroupClasses': offersGroupClasses,
     'groupClassSize': groupClassSize,
+    'tier': tier.name,
   };
 }
 

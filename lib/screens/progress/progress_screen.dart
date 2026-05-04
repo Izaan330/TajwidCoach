@@ -10,6 +10,9 @@ import '../practice/practice_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/tajwid_rule_model.dart';
 import 'video_player_screen.dart';
+import '../../services/islamic_calendar_service.dart';
+import '../../providers/premium_provider.dart';
+import '../store/paywall_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -42,22 +45,7 @@ class _ProgressScreenState extends State<ProgressScreen>
       backgroundColor: AppTheme.backgroundCream,
       appBar: AppBar(
         title: const Text('Deen Hub'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: AppTheme.primaryGreen,
-          unselectedLabelColor: AppTheme.textHint,
-          indicatorColor: AppTheme.primaryGreen,
-          tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: 'Streak'),
-            Tab(text: 'Tajwid'),
-            Tab(text: 'Badges'),
-            Tab(text: 'Tasbih'),
-            Tab(text: 'Duas'),
-            Tab(text: 'Events'),
-          ],
-        ),
+        bottom: _DeenHubTabBar(tabController: _tabController),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -68,6 +56,120 @@ class _ProgressScreenState extends State<ProgressScreen>
           const _TasbihTab(),
           const _DuasTab(),
           const _EventsTab(),
+        ],
+      ),
+    );
+  }
+}
+
+// --- CUSTOM TABBAR WITH SCROLL HINTS ---
+class _DeenHubTabBar extends StatefulWidget implements PreferredSizeWidget {
+  final TabController tabController;
+  const _DeenHubTabBar({required this.tabController});
+
+  @override
+  State<_DeenHubTabBar> createState() => _DeenHubTabBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(48);
+}
+
+class _DeenHubTabBarState extends State<_DeenHubTabBar> {
+  bool _showLeftFade = false;
+  bool _showRightFade = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification) {
+          setState(() {
+            _showLeftFade = notification.metrics.pixels > 5;
+            _showRightFade = notification.metrics.pixels <
+                notification.metrics.maxScrollExtent - 5;
+          });
+        }
+        return false;
+      },
+      child: Stack(
+        children: [
+          TabBar(
+            controller: widget.tabController,
+            isScrollable: true,
+            labelColor: AppTheme.primaryGreen,
+            unselectedLabelColor: AppTheme.textHint,
+            indicatorColor: AppTheme.primaryGreen,
+            tabAlignment: TabAlignment.start,
+            dividerColor: Colors.transparent,
+            labelStyle: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+            tabs: const [
+              Tab(text: 'Streak'),
+              Tab(text: 'Tajwid'),
+              Tab(text: 'Badges'),
+              Tab(text: 'Tasbih'),
+              Tab(text: 'Duas'),
+              Tab(text: 'Events'),
+            ],
+          ),
+          // Left edge fade
+          if (_showLeftFade)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 30,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        AppTheme.backgroundCream.withValues(alpha: 0.0),
+                        AppTheme.backgroundCream,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Right edge fade
+          if (_showRightFade)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 50,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        AppTheme.backgroundCream.withValues(alpha: 0.0),
+                        AppTheme.backgroundCream,
+                      ],
+                    ),
+                  ),
+                  child: const Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(Icons.chevron_right_rounded,
+                          color: AppTheme.primaryGreen, size: 20),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -183,7 +285,7 @@ class _StreakTab extends StatelessWidget {
                       Expanded(
                         child: _StatItem(
                           'BADGES',
-                          '${streak.earnedBadges.length}/5',
+                          '${streak.earnedBadges.length}/${StreakService.allBadges.length}',
                           Icons.workspace_premium_rounded,
                         ),
                       ),
@@ -268,7 +370,10 @@ class _StreakTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _StreakHeatmap(heatmapData: streak.heatmapData),
+          _StreakHeatmap(
+            heatmapData: streak.heatmapData,
+            isPremium: context.watch<PremiumProvider>().isPremium,
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -312,7 +417,8 @@ class _StatItem extends StatelessWidget {
 
 class _StreakHeatmap extends StatefulWidget {
   final Map<String, int> heatmapData;
-  const _StreakHeatmap({required this.heatmapData});
+  final bool isPremium;
+  const _StreakHeatmap({required this.heatmapData, this.isPremium = false});
 
   @override
   State<_StreakHeatmap> createState() => _StreakHeatmapState();
@@ -373,7 +479,8 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
     final today = DateTime(now.year, now.month, now.day);
 
     final List<DateTime> monthsToShow = [];
-    for (int i = 5; i >= 0; i--) {
+    final int monthsCount = widget.isPremium ? 6 : 1;
+    for (int i = monthsCount - 1; i >= 0; i--) {
       monthsToShow.add(DateTime(now.year, now.month - i, 1));
     }
 
@@ -495,6 +602,40 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
               ),
             ],
           ),
+          if (!widget.isPremium)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.premiumGold.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.premiumGold.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.workspace_premium_rounded, color: AppTheme.premiumGold, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Unlock full 6-month practice history with Premium',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.premiumGold,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: AppTheme.premiumGold, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1031,6 +1172,7 @@ class _BadgesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final premium = context.watch<PremiumProvider>();
     return GridView.builder(
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1042,7 +1184,13 @@ class _BadgesTab extends StatelessWidget {
       itemCount: StreakService.allBadges.length,
       itemBuilder: (context, index) {
         final badge = StreakService.allBadges[index];
-        final earned = earnedBadges.contains(badge.id);
+        bool earned = earnedBadges.contains(badge.id);
+        
+        // Handle premium-only badges
+        if (badge.isPremiumOnly) {
+          if (badge.id == 'khadim' && premium.isPremium) earned = true;
+          if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) earned = true;
+        }
         return Container(
           decoration: BoxDecoration(
             color: earned
@@ -1170,6 +1318,10 @@ class _TasbihTabState extends State<_TasbihTab> {
   int _target = 33;
 
   void _increment() {
+    if (_count >= _target) {
+      HapticFeedback.vibrate();
+      return;
+    }
     HapticFeedback.lightImpact();
     setState(() {
       _count++;
@@ -1188,80 +1340,105 @@ class _TasbihTabState extends State<_TasbihTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.divider),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: _target,
-                dropdownColor: AppTheme.backgroundSurface,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.primaryGreen),
-                style: GoogleFonts.plusJakartaSans(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold),
-                items: [33, 99, 1000].map((int value) {
-                  return DropdownMenuItem<int>(
-                    value: value,
-                    child: Text('Target: ${value == 1000 ? 'Infinity' : value}'),
-                  );
-                }).toList(),
-                onChanged: (int? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _target = newValue;
-                      _count = 0;
-                    });
-                  }
-                },
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundSurface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.divider),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _target,
+                  dropdownColor: AppTheme.backgroundSurface,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.primaryGreen),
+                  style: GoogleFonts.plusJakartaSans(
+                      color: AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
+                  items: [33, 99, 1000].map((int value) {
+                    return DropdownMenuItem<int>(
+                      value: value,
+                      child: Text('Target: ${value == 1000 ? 'Infinity' : value}'),
+                    );
+                  }).toList(),
+                  onChanged: (int? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _target = newValue;
+                        _count = 0;
+                      });
+                    }
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 60),
+            const SizedBox(height: 40),
           GestureDetector(
             onTap: _increment,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    AppTheme.primaryGreen.withValues(alpha: 0.05),
-                  ],
-                ),
-                border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.5), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    blurRadius: 40,
-                    spreadRadius: 10,
+            child: Column(
+              children: [
+                Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppTheme.primaryGreen.withValues(alpha: 0.2),
+                        AppTheme.primaryGreen.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.5), width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  '$_count',
-                  style: GoogleFonts.outfit(
-                    fontSize: 80,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.primaryGreen,
+                  child: Center(
+                    child: Text(
+                      '$_count',
+                      style: GoogleFonts.outfit(
+                        fontSize: 80,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (_count == _target)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'GOAL REACHED!',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 40),
           IconButton(
             onPressed: _reset,
             icon: const Icon(Icons.refresh_rounded),
@@ -1271,6 +1448,7 @@ class _TasbihTabState extends State<_TasbihTab> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -1293,6 +1471,26 @@ class _DuasTab extends StatelessWidget {
         'translation': 'In Your name my Lord, I lie down and in Your name I rise.',
       },
       {
+        'title': 'Before Eating',
+        'arabic': 'بِسْمِ اللَّهِ',
+        'translation': 'In the name of Allah.',
+      },
+      {
+        'title': 'After Eating',
+        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا وَجَعَلَنَا مُسْلِمِينَ',
+        'translation': 'Praise be to Allah Who has fed us and given us drink, and made us Muslims.',
+      },
+      {
+        'title': 'Entering Home',
+        'arabic': 'بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى رَبِّنَا تَوَكَّلْنَا',
+        'translation': 'In the name of Allah we enter, in the name of Allah we leave, and upon our Lord we rely.',
+      },
+      {
+        'title': 'Leaving Home',
+        'arabic': 'بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ',
+        'translation': 'In the name of Allah, I place my trust in Allah, and there is no might nor power except with Allah.',
+      },
+      {
         'title': 'Entering Mosque',
         'arabic': 'اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ',
         'translation': 'O Allah, open the doors of Your mercy for me.',
@@ -1301,6 +1499,61 @@ class _DuasTab extends StatelessWidget {
         'title': 'Leaving Mosque',
         'arabic': 'اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ',
         'translation': 'O Allah, I ask You from Your favor.',
+      },
+      {
+        'title': 'For Parents',
+        'arabic': 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
+        'translation': 'My Lord, have mercy upon them as they brought me up [when I was] small.',
+      },
+      {
+        'title': 'For Knowledge',
+        'arabic': 'رَّبِّ زِدْنِي عِلْمًا',
+        'translation': 'My Lord, increase me in knowledge.',
+      },
+      {
+        'title': 'When Traveling',
+        'arabic': 'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ',
+        'translation': 'Glory to Him who has brought this under our control, though we were unable to do it ourselves, and to our Lord we shall return.',
+      },
+      {
+        'title': 'Entering Bathroom',
+        'arabic': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ',
+        'translation': 'O Allah, I seek protection in You from the male and female shaitan.',
+      },
+      {
+        'title': 'Leaving Bathroom',
+        'arabic': 'غُفْرَانَكَ',
+        'translation': 'I ask You for forgiveness.',
+      },
+      {
+        'title': 'After Wudu',
+        'arabic': 'أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
+        'translation': 'I bear witness that there is no god but Allah alone, without partner, and I bear witness that Muhammad is His servant and Messenger.',
+      },
+      {
+        'title': 'Hearing Athan',
+        'arabic': 'اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ',
+        'translation': 'O Allah, Lord of this perfect call and the prayer to be offered, grant Muhammad the privilege and the excellence.',
+      },
+      {
+        'title': 'Wearing Clothes',
+        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي كَسَانِي هَذَا الثَّوْبَ وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ',
+        'translation': 'Praise be to Allah Who has clothed me with this garment and provided it for me without any might or power on my part.',
+      },
+      {
+        'title': 'Looking in the Mirror',
+        'arabic': 'اللَّهُمَّ أَنْتَ حَسَّنْتَ خَلْقِي فَحَسِّنْ خُلُقِي',
+        'translation': 'O Allah, You have made my physical appearance beautiful, so make my character beautiful.',
+      },
+      {
+        'title': 'For Anxiety and Sorrow',
+        'arabic': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ',
+        'translation': 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness.',
+      },
+      {
+        'title': 'Seeking Ease',
+        'arabic': 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي',
+        'translation': 'My Lord, expand for me my chest [with assurance] and ease for me my task.',
       },
     ];
 
@@ -1366,69 +1619,131 @@ class _DuasTab extends StatelessWidget {
 }
 
 // --- EVENTS TAB ---
-class _EventsTab extends StatelessWidget {
+class _EventsTab extends StatefulWidget {
   const _EventsTab();
 
   @override
-  Widget build(BuildContext context) {
-    final events = [
-      {'name': 'Ramadan Begins', 'date': '1st Ramadan'},
-      {'name': 'Eid al-Fitr', 'date': '1st Shawwal'},
-      {'name': 'Arafah', 'date': '9th Dhu al-Hijjah'},
-      {'name': 'Eid al-Adha', 'date': '10th Dhu al-Hijjah'},
-      {'name': 'Islamic New Year', 'date': '1st Muharram'},
-      {'name': 'Ashura', 'date': '10th Muharram'},
-    ];
+  State<_EventsTab> createState() => _EventsTabState();
+}
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppTheme.backgroundSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.divider),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+class _EventsTabState extends State<_EventsTab> {
+  late Future<List<Map<String, String>>> _eventsFuture;
+  final IslamicCalendarService _calendarService = IslamicCalendarService();
+
+  @override
+  void initState() {
+    super.initState();
+    _eventsFuture = _calendarService.getUpcomingEvents();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, String>>>(
+      future: _eventsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: AppTheme.primaryGreen),
+                const SizedBox(height: 16),
+                Text(
+                  'Fetching live dates...',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textHint,
+                    fontSize: 14,
+                  ),
                 ),
-                child: const Icon(Icons.event_rounded, color: AppTheme.primaryGreen),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Center(
+            child: Text(
+              'Could not load events.\nPlease check your connection.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(color: AppTheme.textHint),
+            ),
+          );
+        }
+
+        final events = snapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            final event = events[index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.divider),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event['name']!,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      event['date']!,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        color: AppTheme.textHint,
-                      ),
+                    child: const Icon(Icons.event_rounded,
+                        color: AppTheme.primaryGreen),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event['name']!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          event['hijri']!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            color: AppTheme.textPrimary.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_rounded,
+                              size: 14,
+                              color: AppTheme.primaryGreen.withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              event['gregorian']!,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: AppTheme.primaryGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

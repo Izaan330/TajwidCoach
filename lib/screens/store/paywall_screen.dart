@@ -31,11 +31,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
         children: [
           // ─── Background ────────────────────────────────────────────────
           Positioned.fill(
-            child: Image.network(
-              'https://images.unsplash.com/photo-1542810634-71277d95dcbb?q=80&w=2070&auto=format&fit=crop',
-              fit: BoxFit.cover,
-              color: Colors.black.withValues(alpha: 0.7),
-              colorBlendMode: BlendMode.darken,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0A1E14),
+                    Color(0xFF0D1628),
+                    Color(0xFF000000),
+                  ],
+                ),
+              ),
             ),
           ),
           
@@ -60,45 +67,158 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.workspace_premium_rounded,
-                          size: 80,
-                          color: AppTheme.premiumGold,
+                        // ─── Hero Badge ──────────────────────────────
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFD700), Color(0xFFF59E0B)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.premiumGold.withValues(alpha: 0.4),
+                                blurRadius: 40,
+                                spreadRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.workspace_premium_rounded,
+                            size: 56,
+                            color: Colors.black,
+                          ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         Text(
-                          'TajwidCoach Premium',
+                          'TajwidCoach',
                           style: GoogleFonts.outfit(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Premium',
+                          style: GoogleFonts.outfit(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w900,
                             color: AppTheme.premiumGold,
-                            letterSpacing: -0.5,
+                            letterSpacing: -1,
                           ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Master Quranic Recitation with AI',
+                          'Elevate your Quranic journey with AI coaching',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             color: AppTheme.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 12),
 
-                        // Features List
-                        _buildFeatureRow('Full Quran (114 Surahs) with AI feedback'),
-                        _buildFeatureRow('15+ World-class Qari comparisons'),
-                        _buildFeatureRow('Word-level mistake detection'),
-                        _buildFeatureRow('Advanced progress analytics'),
-                        _buildFeatureRow('Unlimited Sheikh verification sessions'),
-                        _buildFeatureRow('Completely Ad-Free experience'),
+                        // ─── Free vs Premium comparison ──────────────
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.menu_book_rounded, color: AppTheme.primaryGreen, size: 20),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Reading the Quran is always FREE — all 114 Surahs, forever.',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryGreen,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 32),
 
-                        // Plans
-                        ...PremiumProvider.plans.map((plan) => _buildPlanCard(plan)),
+                        // ─── Feature Grid ────────────────────────────
+                        _buildFeatureRow(Icons.psychology_rounded, 'Advanced AI Engine', '25+ Tajwid rules analyzed'),
+                        _buildFeatureRow(Icons.record_voice_over_rounded, '15 World-class Qaris', 'From Mishary to Husary & more'),
+                        _buildFeatureRow(Icons.pinch_rounded, 'Word-level Feedback', 'Know exactly where you erred'),
+                        _buildFeatureRow(Icons.menu_book_rounded, 'Hifz & Revision Tools', 'Progressive word hiding mode'),
+                        _buildFeatureRow(Icons.download_rounded, 'Offline Quran & Audio', 'Read & listen without internet'),
+                        _buildFeatureRow(Icons.graphic_eq_rounded, 'Sheikh Waveform Compare', 'See your voice vs a Qari'),
+                        _buildFeatureRow(Icons.ac_unit_rounded, 'Extra Streak Freezes', 'Never lose your streak again'),
+                        _buildFeatureRow(Icons.block_rounded, 'Ad-Free Experience', 'Pure, distraction-free reading'),
+                        _buildFeatureRow(Icons.palette_rounded, 'Premium Mushaf Themes', 'Night in Madinah, Ottoman & more'),
+
+                        const SizedBox(height: 12),
+                        const Divider(color: AppTheme.divider, height: 40),
+
+                        // ─── Premium Bridge Section ──────────────────
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'PREMIUM BRIDGE',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.premiumGold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBridgeRow(Icons.discount_rounded, '15% off all Sheikh sessions'),
+                        _buildBridgeRow(Icons.card_giftcard_rounded, '₹100 Sheikh credit every quarter'),
+
+                        const SizedBox(height: 32),
+
+                        // ─── Regular Plans ──────────────────────────────
+                        ...PremiumProvider.plans
+                            .where((p) => p.tier != PremiumTier.sheikhPro)
+                            .map((plan) => _buildPlanCard(plan)),
+
+                        const SizedBox(height: 24),
+                        
+                        // ─── Sheikh/Institutional Header ────────────────
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: AppTheme.divider)),
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'FOR TEACHERS & INSTITUTIONS',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.primaryGreen,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider(color: AppTheme.divider)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ─── Sheikh Pro Plan ────────────────────────────
+                        ...PremiumProvider.plans
+                            .where((p) => p.tier == PremiumTier.sheikhPro)
+                            .map((plan) => _buildPlanCard(plan, isInstitutional: true)),
 
                         const SizedBox(height: 32),
                       ],
@@ -110,8 +230,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppTheme.backgroundSurface.withValues(alpha: 0.9),
+                    color: AppTheme.backgroundSurface.withValues(alpha: 0.95),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 30,
+                        offset: const Offset(0, -10),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -182,17 +309,59 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return PremiumProvider.plans.firstWhere((p) => p.id == id).name;
   }
 
-  Widget _buildFeatureRow(String text) {
+  Widget _buildFeatureRow(IconData icon, String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen, size: 20),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AppTheme.primaryGreen, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen, size: 18),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBridgeRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.premiumGold, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),
         ],
@@ -200,8 +369,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildPlanCard(PremiumPlan plan) {
+  Widget _buildPlanCard(PremiumPlan plan, {bool isInstitutional = false}) {
     final isSelected = _selectedPlanId == plan.id;
+    
+    final accentColor = isInstitutional ? AppTheme.primaryGreen : AppTheme.premiumGold;
     
     return GestureDetector(
       onTap: () => setState(() => _selectedPlanId = plan.id),
@@ -211,16 +382,41 @@ class _PaywallScreenState extends State<PaywallScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected 
-              ? AppTheme.premiumGold.withValues(alpha: 0.1) 
+              ? accentColor.withValues(alpha: 0.1) 
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.premiumGold : Colors.white10,
+            color: isSelected ? accentColor : Colors.white10,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
+            // Radio indicator
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? accentColor : Colors.white30,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accentColor,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,23 +429,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: isSelected ? AppTheme.premiumGold : Colors.white,
+                            color: isSelected ? accentColor : Colors.white,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (plan.isPopular) ...[
+                      if (plan.isPopular && !isInstitutional) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppTheme.premiumGold,
+                            color: accentColor,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'BEST VALUE',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w900,
                               color: Colors.black,
                             ),
@@ -258,6 +454,24 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       ],
                     ],
                   ),
+                  if (isInstitutional) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'EXCLUSIVELY FOR TEACHERS',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     plan.description,

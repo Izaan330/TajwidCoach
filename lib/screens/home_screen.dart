@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/streak_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/quran_provider.dart';
+import '../providers/premium_provider.dart';
 import '../models/last_read_model.dart';
 import '../models/surah_model.dart';
 import 'quran/surah_detail_screen.dart';
@@ -29,6 +30,8 @@ class HomeScreen extends StatelessWidget {
     final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
     final dailySurah =
         surahs.isNotEmpty ? surahs[dayOfYear % surahs.length] : null;
+
+    final isPremium = context.watch<PremiumProvider>().isPremium;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundMid,
@@ -213,7 +216,7 @@ class HomeScreen extends StatelessWidget {
                   ],
 
                   // Premium Upsell
-                  if (!(user?.isPremium ?? false))
+                  if (!isPremium)
                     _PremiumBanner(
                       onTap: () {
                         HapticFeedback.mediumImpact();
@@ -564,6 +567,32 @@ class _StreakCard extends StatelessWidget {
                 ),
               ),
             ),
+          
+          if (streak.streakFreezes <= 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                  label: const Text('GET MORE FREEZES'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.info,
+                    side: const BorderSide(color: AppTheme.info),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -755,7 +784,7 @@ class _PremiumBannerState extends State<_PremiumBanner>
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Full Quran + 15 Qaris + AI + Sheikh access',
+                    'AI Coach + 15 Qaris + Offline + Ad-Free',
                     style: TextStyle(
                         color: AppTheme.textSecondary, fontSize: 12),
                   ),

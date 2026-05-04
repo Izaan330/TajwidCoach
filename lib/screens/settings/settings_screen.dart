@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../theme/app_theme.dart';
 import 'privacy_policy_screen.dart';
+import '../progress/family_leaderboard_screen.dart';
+import '../store/paywall_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -11,6 +14,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+    final premium = context.watch<PremiumProvider>();
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundCream,
@@ -24,6 +28,38 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ───── Subscription ─────
+          const _SectionHeader(title: 'Subscription'),
+          const SizedBox(height: 8),
+          _SettingsCard(
+            icon: Icons.workspace_premium_rounded,
+            iconColor: AppTheme.premiumGold,
+            title: premium.isPremium ? 'Premium Active' : 'Upgrade to Premium',
+            subtitle: premium.isPremium 
+                ? 'You are enjoying all pro features' 
+                : 'Unlock AI feedback, offline mode, and more',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PaywallScreen()),
+            ),
+            trailing: premium.isPremium 
+                ? const Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen)
+                : const Icon(Icons.chevron_right_rounded),
+          ),
+          const SizedBox(height: 16),
+
+          // ───── Family Plan ─────
+          if (premium.isFamilyPlan) ...[
+            const _SectionHeader(title: 'Family Plan'),
+            const SizedBox(height: 8),
+            _SettingsCard(
+              icon: Icons.group_add_rounded,
+              title: 'Manage Family',
+              subtitle: 'Invite members and see leaderboard',
+              onTap: () => _showFamilyManager(context, premium),
+            ),
+            const SizedBox(height: 16),
+          ],
           // ───── Quran Display ─────
           const _SectionHeader(title: 'Quran Display'),
           const SizedBox(height: 8),
@@ -252,6 +288,17 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _showFamilyManager(BuildContext context, PremiumProvider premium) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _FamilyManagerSheet(premium: premium),
+    );
+  }
 }
 
 class _ScriptPickerSheet extends StatelessWidget {
@@ -282,6 +329,13 @@ class _ScriptPickerSheet extends StatelessWidget {
                 script: script,
                 isSelected: settings.quranScript == script,
                 onTap: () {
+                  final premium = context.read<PremiumProvider>();
+                  if (script != QuranScript.indoPak && !premium.isPremium) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    );
+                    return;
+                  }
                   settings.setQuranScript(script);
                   Navigator.pop(context);
                 },
@@ -516,6 +570,8 @@ class _SettingsCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final bool isDanger;
+  final Color? iconColor;
+  final Widget? trailing;
 
   const _SettingsCard({
     required this.icon,
@@ -523,11 +579,13 @@ class _SettingsCard extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.isDanger = false,
+    this.iconColor,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = isDanger ? AppTheme.qalqalahRed : AppTheme.primaryGreen;
+    final color = isDanger ? AppTheme.qalqalahRed : (iconColor ?? AppTheme.primaryGreen);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
@@ -551,8 +609,9 @@ class _SettingsCard extends StatelessWidget {
         subtitle: Text(subtitle,
             style: const TextStyle(
                 fontSize: 12, color: AppTheme.textSecondary)),
-        trailing: const Icon(Icons.chevron_right_rounded,
-            color: AppTheme.textSecondary),
+        trailing: trailing ??
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.textSecondary),
         onTap: onTap,
       ),
     );
@@ -674,6 +733,146 @@ class _FontSizeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FamilyManagerSheet extends StatelessWidget {
+  final PremiumProvider premium;
+  const _FamilyManagerSheet({required this.premium});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 24,
+        left: 24,
+        right: 24,
+        bottom: 40,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '👨‍👩‍👧‍👦 Family Manager',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (premium.familyCode == null)
+            Center(
+              child: Column(
+                children: [
+                  const Text(
+                    'No family group created yet.',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => premium.generateFamilyCode(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Generate Family Code'),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Your Family Invite Code',
+                    style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    premium.familyCode!,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 8,
+                      color: AppTheme.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Share this code with up to 2 family members to join your plan.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FamilyLeaderboardScreen()),
+                ),
+                icon: const Icon(Icons.leaderboard_rounded),
+                label: const Text('View Family Leaderboard'),
+                style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryGreen),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Family Members',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            ...premium.familyMemberUids.map((uid) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: AppTheme.backgroundCream,
+                    child: Icon(Icons.person_rounded, color: AppTheme.primaryGreen),
+                  ),
+                  title: Text('Member ${uid.substring(0, 5)}...'),
+                  subtitle: Text(uid == premium.userId ? 'Owner' : 'Family Member'),
+                  trailing: uid != premium.userId
+                      ? IconButton(
+                          icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red),
+                          onPressed: () {
+                            // Logic to remove member
+                          },
+                        )
+                      : const Text('You', style: TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                )),
+            if (premium.familyMemberUids.length < 3)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: Text(
+                    '+ Waiting for more members...',
+                    style: TextStyle(fontStyle: FontStyle.italic, color: AppTheme.textSecondary, fontSize: 13),
+                  ),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }

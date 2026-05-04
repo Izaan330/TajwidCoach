@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/sheikh_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/recording_model.dart';
 import 'student_profile_screen.dart';
-
+import '../../models/sheikh_model.dart';
 
 class SheikhDashboardScreen extends StatefulWidget {
   const SheikhDashboardScreen({super.key});
@@ -35,74 +36,113 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
     final pendingCount = sheikhProvider.pendingReviews.length;
     final studentCount = sheikhProvider.myStudentUids.length;
 
+    final isPro = currentSheikh?.tier == SheikhTier.pro || currentSheikh?.tier == SheikhTier.madrasa;
+
     return DefaultTabController(
-      length: 2,
+      length: isPro ? 3 : 2,
       child: Scaffold(
         backgroundColor: AppTheme.backgroundCream,
         appBar: AppBar(
-          title: const Text('Sheikh Dashboard'),
+          backgroundColor: AppTheme.backgroundDark,
+          toolbarHeight: 64,
+          centerTitle: false,
+          elevation: 0,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Sheikh Dashboard',
+              style: GoogleFonts.outfit(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ),
           actions: [
             if (currentSheikh != null)
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     currentSheikh.isAvailable ? 'Online' : 'Offline',
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
                       color: currentSheikh.isAvailable
                           ? AppTheme.primaryGreen
                           : AppTheme.textHint,
                     ),
                   ),
-                  Switch(
-                    value: currentSheikh.isAvailable,
-                    activeThumbColor: AppTheme.primaryGreen,
-                    onChanged: (val) {
-                      sheikhProvider.toggleAvailability(currentSheikh.id, val);
-                    },
+                  const SizedBox(width: 2),
+                  Transform.scale(
+                    scale: 0.7,
+                    child: Switch(
+                      value: currentSheikh.isAvailable,
+                      activeThumbColor: AppTheme.primaryGreen,
+                      activeTrackColor:
+                          AppTheme.primaryGreen.withValues(alpha: 0.3),
+                      onChanged: (val) {
+                        sheikhProvider.toggleAvailability(
+                            currentSheikh.id, val);
+                      },
+                    ),
                   ),
                 ],
               ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded),
-              onSelected: (value) {
-                if (value == 'logout') {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Sign Out'),
-                      content: const Text('Are you sure you want to sign out?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            context.read<AuthProvider>().signOut();
-                          },
-                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                          child: const Text('Sign Out'),
-                        ),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+                offset: const Offset(0, 50),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  if (value == 'logout') {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Sign Out'),
+                        content:
+                            const Text('Are you sure you want to sign out?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              context.read<AuthProvider>().signOut();
+                            },
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.red),
+                            child: const Text('Sign Out'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.red, size: 18),
+                        SizedBox(width: 8),
+                        Text('Sign Out', style: TextStyle(color: Colors.red)),
                       ],
                     ),
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red, size: 18),
-                      SizedBox(width: 8),
-                      Text('Sign Out', style: TextStyle(color: Colors.red)),
-                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
           bottom: PreferredSize(
@@ -113,21 +153,34 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
-                      _StatItem(label: 'Pending', value: '$pendingCount', color: Colors.orange),
+                      _StatItem(
+                        label: 'Pending',
+                        value: '$pendingCount',
+                        color: Colors.orange,
+                      ),
                       const SizedBox(width: 12),
-                      _StatItem(label: 'Students', value: '$studentCount', color: AppTheme.primaryGreen),
+                      _StatItem(
+                        label: 'Students',
+                        value: '$studentCount',
+                        color: AppTheme.primaryGreen,
+                      ),
                       const SizedBox(width: 12),
-                      const _StatItem(label: 'Earnings', value: '₹0', color: AppTheme.accentAmber),
+                      const _StatItem(
+                        label: 'Earnings',
+                        value: '₹0',
+                        color: AppTheme.accentAmber,
+                      ),
                     ],
                   ),
                 ),
-                const TabBar(
+                TabBar(
                   labelColor: AppTheme.primaryGreen,
                   unselectedLabelColor: AppTheme.textHint,
                   indicatorColor: AppTheme.primaryGreen,
                   tabs: [
-                    Tab(text: 'Pending Reviews'),
-                    Tab(text: 'My Students'),
+                    const Tab(text: 'Pending'),
+                    const Tab(text: 'Students'),
+                    if (isPro) const Tab(text: 'Earnings'),
                   ],
                 ),
               ],
@@ -139,13 +192,15 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
             if (currentSheikh != null && !currentSheikh.isVerified)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 color: Colors.orange.withValues(alpha: 0.1),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    Icon(Icons.info_outline_rounded,
+                        color: Colors.orange, size: 20),
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Text(
                         'Your profile is under review. You will appear in the search list once verified by our team.',
                         style: TextStyle(
@@ -158,10 +213,11 @@ class _SheikhDashboardScreenState extends State<SheikhDashboardScreen> {
                   ],
                 ),
               ),
-            const Expanded(
+            Expanded(
               child: TabBarView(children: [
-                _PendingReviewsTab(),
-                _MyStudentsTab(),
+                const _PendingReviewsTab(),
+                const _MyStudentsTab(),
+                if (isPro) const _EarningsTab(),
               ]),
             ),
           ],
@@ -175,7 +231,8 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatItem({required this.label, required this.value, required this.color});
+  const _StatItem(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -189,8 +246,12 @@ class _StatItem extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 10, color: AppTheme.textSecondary)),
           ],
         ),
       ),
@@ -267,8 +328,10 @@ class _ReviewCardState extends State<_ReviewCard> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                      child: const Icon(Icons.person, color: AppTheme.primaryGreen),
+                      backgroundColor:
+                          AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      child: const Icon(Icons.person,
+                          color: AppTheme.primaryGreen),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -291,7 +354,8 @@ class _ReviewCardState extends State<_ReviewCard> {
                 ),
                 Text(
                   _timeAgo(widget.review.timestamp),
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textHint),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.textHint),
                 ),
               ],
             ),
@@ -312,7 +376,8 @@ class _ReviewCardState extends State<_ReviewCard> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _submit(false),
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                    style:
+                        OutlinedButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Needs Work'),
                   ),
                 ),
@@ -447,9 +512,9 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
                   ),
                   child: Slider(
                     value: _position.inMilliseconds.toDouble(),
-                    max: _duration.inMilliseconds.toDouble() > 0 
-                      ? _duration.inMilliseconds.toDouble() 
-                      : 1.0,
+                    max: _duration.inMilliseconds.toDouble() > 0
+                        ? _duration.inMilliseconds.toDouble()
+                        : 1.0,
                     onChanged: (value) {
                       _player.seek(Duration(milliseconds: value.toInt()));
                     },
@@ -460,11 +525,13 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
                   children: [
                     Text(
                       _formatDuration(_position),
-                      style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 10, color: AppTheme.textSecondary),
                     ),
                     Text(
                       _formatDuration(_duration),
-                      style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 10, color: AppTheme.textSecondary),
                     ),
                   ],
                 ),
@@ -514,14 +581,17 @@ class _MyStudentsTab extends StatelessWidget {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: AppTheme.accentAmber.withValues(alpha: 0.1),
-              backgroundImage: student.photoUrl != null ? NetworkImage(student.photoUrl!) : null,
-              child: student.photoUrl == null 
-                ? const Icon(Icons.person, color: AppTheme.accentAmber) 
-                : null,
+              backgroundImage: student.photoUrl != null
+                  ? NetworkImage(student.photoUrl!)
+                  : null,
+              child: student.photoUrl == null
+                  ? const Icon(Icons.person, color: AppTheme.accentAmber)
+                  : null,
             ),
             title: Text(student.name),
             subtitle: Text('Streak: ${student.streakDays} days'),
-            trailing: const Icon(Icons.workspace_premium_rounded, color: AppTheme.accentAmber),
+            trailing: const Icon(Icons.workspace_premium_rounded,
+                color: AppTheme.accentAmber),
             onTap: () {
               Navigator.push(
                 context,
@@ -537,3 +607,117 @@ class _MyStudentsTab extends StatelessWidget {
   }
 }
 
+class _EarningsTab extends StatelessWidget {
+  const _EarningsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: AppTheme.goldAccentGradient,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentAmber.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.account_balance_wallet_rounded, color: Colors.black, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Total Earnings',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
+                Text(
+                  '₹4,250.00',
+                  style: GoogleFonts.outfit(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Next Payout: May 15',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Recent Payouts',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          const _PayoutItem(date: 'April 30, 2024', amount: '₹1,500', status: 'Completed'),
+          const _PayoutItem(date: 'April 15, 2024', amount: '₹2,750', status: 'Completed'),
+          const SizedBox(height: 32),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.help_outline_rounded, size: 16),
+              label: const Text('How are earnings calculated?'),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.textHint),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PayoutItem extends StatelessWidget {
+  final String date;
+  final String amount;
+  final String status;
+
+  const _PayoutItem({required this.date, required this.amount, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(date, style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text(status, style: const TextStyle(fontSize: 12, color: AppTheme.primaryGreen)),
+            ],
+          ),
+          Text(amount, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.textPrimary)),
+        ],
+      ),
+    );
+  }
+}

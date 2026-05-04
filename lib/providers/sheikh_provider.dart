@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sheikh_model.dart';
@@ -18,6 +19,10 @@ class SheikhProvider extends ChangeNotifier {
   SheikhModel? _currentSheikh;
   bool _isLoading = false;
 
+  StreamSubscription<DocumentSnapshot>? _currentSheikhSubscription;
+  StreamSubscription<List<RecordingModel>>? _pendingReviewsSubscription;
+  StreamSubscription<List<String>>? _myStudentsSubscription;
+
   List<SheikhModel> get availableSheikhs => _availableSheikhs;
   SheikhModel? get currentSheikh => _currentSheikh;
   List<RecordingModel> get pendingReviews => _pendingReviews;
@@ -25,6 +30,11 @@ class SheikhProvider extends ChangeNotifier {
   List<UserModel> get myStudents => 
       _myStudentUids.map((uid) => _studentProfiles[uid] ?? UserModel(uid: uid, name: 'Loading...', phone: '')).toList();
   bool get isLoading => _isLoading;
+
+  bool canAcceptMoreStudents(SheikhModel sheikh) {
+    if (sheikh.tier != SheikhTier.basic) return true;
+    return (sheikh.students.length) < 10; // Basic limit is 10 students
+  }
 
   SheikhProvider() {
     _fetchAvailableSheikhs();
@@ -56,7 +66,7 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   List<SheikhModel> _getMockSheikhs() {
-    return [
+    return const [
       SheikhModel(
         id: 'mock_1',
         name: 'Sheikh Ahmed Al-Misri',
@@ -105,52 +115,50 @@ class SheikhProvider extends ChangeNotifier {
   /// Listen for pending reviews if the current user is a sheikh.
   void listenToPendingReviews(String sheikhId) {
     // Also fetch current sheikh data
-    _fetchCurrentSheikh(sheikhId);
-    _service.getPendingReviews(sheikhId).listen((recordings) {
+    _listenToCurrentSheikh(sheikhId);
+    
+    _pendingReviewsSubscription?.cancel();
+    _pendingReviewsSubscription = _service.getPendingReviews(sheikhId).listen((recordings) {
       _pendingReviews = recordings;
       notifyListeners();
     });
   }
 
-  Future<void> _fetchCurrentSheikh(String sheikhId) async {
-    try {
-      final doc = await _firestore.collection('sheikhs').doc(sheikhId).get();
+  void _listenToCurrentSheikh(String sheikhId) {
+    _currentSheikhSubscription?.cancel();
+    _currentSheikhSubscription = _firestore
+        .collection('sheikhs')
+        .doc(sheikhId)
+        .snapshots()
+        .listen((doc) {
       if (doc.exists) {
         _currentSheikh = SheikhModel.fromMap(doc.data()!);
+        notifyListeners();
       } else {
-        // Mock fallback for demo/development
-        _currentSheikh = SheikhModel(
-          id: sheikhId,
-          name: 'Sheikh User',
-          englishName: 'Sheikh User',
-          phone: '',
-          masjid: 'Demo Masjid',
-          city: 'Demo City',
-          isVerified: false,
-          isAvailable: true,
-        );
+        // Mock fallback for demo/development if doc doesn't exist
+        if (_currentSheikh == null) {
+          _currentSheikh = SheikhModel(
+            id: sheikhId,
+            name: 'Sheikh User',
+            englishName: 'Sheikh User',
+            phone: '',
+            masjid: 'Demo Masjid',
+            city: 'Demo City',
+            isVerified: false,
+            isAvailable: true,
+          );
+          notifyListeners();
+        }
       }
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error fetching current sheikh: $e');
-      // Even on error, provide a fallback to prevent UI issues
-      _currentSheikh = SheikhModel(
-        id: sheikhId,
-        name: 'Sheikh User',
-        englishName: 'Sheikh User',
-        phone: '',
-        masjid: 'Demo Masjid',
-        city: 'Demo City',
-        isVerified: false,
-        isAvailable: true,
-      );
-      notifyListeners();
-    }
+    }, onError: (e) {
+      debugPrint('Error listening to current sheikh: $e');
+    });
   }
 
   /// Listen for assigned students and fetch their profiles.
   void listenToMyStudents(String sheikhId) {
-    _service.getSheikhStudentUids(sheikhId).listen((uids) async {
+    _myStudentsSubscription?.cancel();
+    _myStudentsSubscription = _service.getSheikhStudentUids(sheikhId).listen((uids) async {
       _myStudentUids = uids;
       
       // Fetch missing profiles
@@ -184,12 +192,21 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   Future<void> toggleAvailability(String sheikhId, bool isAvailable) async {
+    // Optimistic update for current sheikh to make UI feel snappy
+    if (_currentSheikh != null && _currentSheikh!.id == sheikhId) {
+      _currentSheikh = SheikhModel.fromMap({
+        ..._currentSheikh!.toMap(),
+        'isAvailable': isAvailable,
+      });
+      notifyListeners();
+    }
+
     try {
       await _firestore.collection('sheikhs').doc(sheikhId).update({
         'isAvailable': isAvailable,
       });
       
-      // Update local state if the sheikh is in the current list
+      // Update local state in available list if present
       final index = _availableSheikhs.indexWhere((s) => s.id == sheikhId);
       if (index != -1) {
         final updated = SheikhModel.fromMap({
@@ -201,7 +218,17 @@ class SheikhProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error toggling availability: $e');
+      // Revert local state if needed? For now we just log.
+      // If we have a listener, it will eventually sync back to server state.
     }
+  }
+
+  @override
+  void dispose() {
+    _currentSheikhSubscription?.cancel();
+    _pendingReviewsSubscription?.cancel();
+    _myStudentsSubscription?.cancel();
+    super.dispose();
   }
 
   Stream<List<IjazahCertificate>> getStudentCertificates(String userId) {
@@ -215,6 +242,15 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   Future<void> enrollWithSheikh(String userId, String sheikhId) async {
+    // Fetch latest sheikh data to check capacity
+    final doc = await _firestore.collection('sheikhs').doc(sheikhId).get();
+    if (!doc.exists) throw Exception('Sheikh not found');
+    
+    final sheikh = SheikhModel.fromMap(doc.data()!);
+    if (!canAcceptMoreStudents(sheikh)) {
+      throw Exception('This Sheikh has reached their student limit. Try a Sheikh Pro or Madrasa!');
+    }
+
     // 1. Update user's sheikhId
     await _firestore.collection('users').doc(userId).update({'sheikhId': sheikhId});
     

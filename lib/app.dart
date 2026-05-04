@@ -41,6 +41,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isInitialized = false;
   String? _lastUid;
+  PremiumTier? _lastTier;
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final auth = context.watch<AuthProvider>();
+    final premium = context.watch<PremiumProvider>();
     final user = auth.user;
     final uid = user?.uid;
     
@@ -76,13 +78,51 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // Push UID into dependent services so cloud sync activates/deactivates
       context.read<StreakProvider>().updateUserId(uid);
       context.read<TajwidProgressProvider>().updateUserId(uid);
-      context.read<PremiumProvider>().updateUserId(uid);
+      
+      final premium = context.read<PremiumProvider>();
+      premium.updateUserId(uid);
+      
+      // Sync premium status to StreakProvider
+      context.read<StreakProvider>().updatePremiumStatus(
+        !premium.isLocked(PremiumFeature.unlimitedFreezes),
+        premium.maxFreezes,
+      );
 
       if (uid != null && user != null && user.isSheikh) {
         context.read<SheikhProvider>().listenToPendingReviews(uid);
         context.read<SheikhProvider>().listenToMyStudents(uid);
       }
+    } else if (premium.tier != _lastTier) {
+      // Tier changed for the same user (Upgrade)
+      final oldMax = context.read<StreakProvider>().maxFreezes;
+      final newMax = premium.maxFreezes;
+
+      context.read<StreakProvider>().updatePremiumStatus(
+        !premium.isLocked(PremiumFeature.unlimitedFreezes),
+        newMax,
+      );
+
+      if (newMax > oldMax && mounted) {
+        final diff = newMax - oldMax;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.ac_unit_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Premium Reward: +$diff Streak Freezes added!'),
+                ],
+              ),
+              backgroundColor: AppTheme.info,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        });
+      }
     }
+    _lastTier = premium.tier;
   }
 
   @override

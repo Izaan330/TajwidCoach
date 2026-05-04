@@ -1,12 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qcf_quran/qcf_quran.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import '../../providers/premium_provider.dart';
-import '../store/paywall_screen.dart';
 
 import '../../theme/app_theme.dart';
 import '../../models/surah_model.dart';
@@ -15,8 +12,10 @@ import '../../providers/settings_provider.dart';
 import '../../utils/quran_constants.dart';
 import '../../services/quran_api_service.dart';
 import '../../widgets/tajweed_text.dart';
-import '../../widgets/mushaf_page_view.dart';
 import '../practice/practice_screen.dart';
+import '../../services/ad_service.dart';
+import '../../providers/premium_provider.dart';
+import '../store/paywall_screen.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final SurahModel surah;
@@ -50,12 +49,59 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     _loadSurah();
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        setState(() => _playingAyah = null);
+        if (mounted) setState(() => _playingAyah = null);
       }
     });
 
+    _itemPositionsListener.itemPositions.addListener(_onScroll);
+
     final initialPage = context.read<QuranProvider>().currentPage;
     _pageController = PageController(initialPage: initialPage - 1);
+  }
+
+  void _onScroll() {
+    final settings = context.read<SettingsProvider>();
+    if (settings.quranScript == QuranScript.mushaf) return;
+
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    // Find the first visible ayah to determine current page
+    final hasBismillah = widget.surah.number != 9 && widget.surah.number != 1;
+    final indexOffset = hasBismillah ? 2 : 1;
+
+    final sortedPositions = positions.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    final topPosition = sortedPositions.firstWhere(
+      (p) => p.index >= indexOffset,
+      orElse: () => sortedPositions.first,
+    );
+
+    if (topPosition.index >= indexOffset) {
+      final quranProvider = context.read<QuranProvider>();
+      final ayahs = quranProvider.currentAyahs;
+      final ayahIndex = topPosition.index - indexOffset;
+      if (ayahIndex >= 0 && ayahIndex < ayahs.length) {
+        final pageNumber = ayahs[ayahIndex].pageNumber;
+        quranProvider.setCurrentPage(pageNumber);
+      }
+    }
+  }
+
+  void _scrollToCurrentPage() {
+    if (!_itemScrollController.isAttached) return;
+    
+    final quranProvider = context.read<QuranProvider>();
+    final targetPage = quranProvider.currentPage;
+    final ayahIndex = quranProvider.findFirstAyahIndexOnPage(targetPage);
+    
+    final hasBismillah = widget.surah.number != 9 && widget.surah.number != 1;
+    final indexOffset = hasBismillah ? 2 : 1;
+
+    _itemScrollController.jumpTo(
+      index: ayahIndex + indexOffset,
+    );
   }
 
   void _scrollToAyah(int ayahNumber) {
@@ -201,6 +247,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   Widget build(BuildContext context) {
     final quranProvider = context.watch<QuranProvider>();
     final settings = context.watch<SettingsProvider>();
+    final isPremium = context.watch<PremiumProvider>().isPremium;
     final ayahs = quranProvider.currentAyahs;
     final isLoading = quranProvider.isLoading;
 
@@ -212,18 +259,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       });
     }
     final script = settings.quranScript;
-    final premium = context.watch<PremiumProvider>();
-
-    // Premium Check
-    final isFreeSurah = widget.surah.number == 1 || widget.surah.number >= 78;
-    final isLocked = !premium.isPremium && !isFreeSurah;
 
     final isFullScreenMode =
         script == QuranScript.mushaf || script == QuranScript.tajweed;
     final showAppBar = !isFullScreenMode || (quranProvider.isUIVisible);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundMid,
+      backgroundColor: AppTheme.backgroundCream,
       extendBodyBehindAppBar: isFullScreenMode,
       appBar: showAppBar
           ? AppBar(
@@ -257,50 +299,106 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 PopupMenuButton<QuranScript>(
                   icon: const Icon(Icons.auto_stories_outlined),
                   tooltip: 'Reading Mode',
-                  onSelected: (script) => settings.setQuranScript(script),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: QuranScript.mushaf,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.menu_book_rounded, color: AppTheme.primaryGreen, size: 20),
-                          const SizedBox(width: 12),
-                          Text('Mushaf (Madani)', style: TextStyle(color: settings.quranScript == QuranScript.mushaf ? AppTheme.primaryGreen : null)),
-                        ],
+                  onSelected: (script) {
+                    if (script == settings.quranScript) return;
+
+                    if (script != QuranScript.indoPak && !isPremium) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PaywallScreen()),
+                      );
+                      return;
+                    }
+                    
+                    // If switching TO a text mode from a full-page mode, 
+                    // we'll need to scroll the list after the next frame
+                    final wasFullScreen = settings.quranScript == QuranScript.mushaf;
+                    
+                    settings.setQuranScript(script);
+
+                    if (wasFullScreen && script != QuranScript.mushaf) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToCurrentPage();
+                      });
+                    }
+                  },
+                  itemBuilder: (context) {
+                    return [
+                      PopupMenuItem(
+                        value: QuranScript.mushaf,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.menu_book_rounded,
+                                color: AppTheme.primaryGreen, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text('Mushaf (Madani)',
+                                    style: TextStyle(
+                                        color: settings.quranScript ==
+                                                QuranScript.mushaf
+                                            ? AppTheme.primaryGreen
+                                            : null))),
+                            if (!isPremium)
+                              const Icon(Icons.lock_outline_rounded,
+                                  size: 14, color: AppTheme.textHint),
+                          ],
+                        ),
                       ),
-                    ),
-                    PopupMenuItem(
-                      value: QuranScript.indoPak,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.text_fields_rounded, color: AppTheme.info, size: 20),
-                          const SizedBox(width: 12),
-                          Text('Indo-Pak Script', style: TextStyle(color: settings.quranScript == QuranScript.indoPak ? AppTheme.info : null)),
-                        ],
+                      PopupMenuItem(
+                        value: QuranScript.indoPak,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.text_fields_rounded,
+                                color: AppTheme.info, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text('Indo-Pak Script',
+                                    style: TextStyle(
+                                        color: settings.quranScript ==
+                                                QuranScript.indoPak
+                                            ? AppTheme.info
+                                            : null))),
+                          ],
+                        ),
                       ),
-                    ),
-                    PopupMenuItem(
-                      value: QuranScript.tajweed,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.color_lens_rounded, color: AppTheme.accentAmber, size: 20),
-                          const SizedBox(width: 12),
-                          Text('Tajweed Text', style: TextStyle(color: settings.quranScript == QuranScript.tajweed ? AppTheme.accentAmber : null)),
-                        ],
+                      PopupMenuItem(
+                        value: QuranScript.tajweed,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.color_lens_rounded,
+                                color: AppTheme.accentAmber, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text('Tajweed Text',
+                                    style: TextStyle(
+                                        color: settings.quranScript ==
+                                                QuranScript.tajweed
+                                            ? AppTheme.accentAmber
+                                            : null))),
+                            if (!isPremium)
+                              const Icon(Icons.lock_outline_rounded,
+                                  size: 14, color: AppTheme.textHint),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ];
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.bookmark_add_outlined),
                   tooltip: 'Save Position',
-                  onPressed: isLocked ? null : _manualSaveLastRead,
+                  onPressed: _manualSaveLastRead,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.text_format_rounded),
+                  tooltip: 'Appearance',
+                  onPressed: () => _showAppearanceSettings(context),
                 ),
                 if (!isFullScreenMode)
                   IconButton(
                     icon: const Icon(Icons.mic_rounded),
                     color: AppTheme.accentAmber,
-                    onPressed: isLocked ? null : () => Navigator.of(context).push(
+                    onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PracticeScreen(surah: widget.surah),
                       ),
@@ -309,86 +407,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               ],
             )
           : null,
-      body: isLocked 
-          ? _buildLockedOverlay(context)
-          : _buildBody(script, ayahs, isLoading, quranProvider, settings),
+      body: _buildBody(script, ayahs, isLoading, quranProvider, settings),
+      bottomNavigationBar: AdService.getBannerAd(
+        isPremium: context.watch<PremiumProvider>().isPremium,
+      ),
     );
   }
 
-  Widget _buildLockedOverlay(BuildContext context) {
-    return Stack(
-      children: [
-        // Blurred background of the first page/ayahs
-        Positioned.fill(
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.3),
-              child: Center(
-                child: Icon(Icons.mosque_rounded, size: 100, color: Colors.white.withValues(alpha: 0.5)),
-              ),
-            ),
-          ),
-        ),
-        
-        // Lock message
-        Center(
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_person_rounded, color: AppTheme.premiumGold, size: 64),
-                const SizedBox(height: 20),
-                const Text(
-                  'Premium Surah',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Access to all 114 Surahs is a Premium feature. Start your journey with the full Quran today.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.premiumGold,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Unlock Full Quran', style: TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Back to Free Surahs', style: TextStyle(color: AppTheme.textHint)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildBody(
     QuranScript script,
@@ -397,9 +423,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     QuranProvider quranProvider,
     SettingsProvider settings,
   ) {
-    if (script == QuranScript.mushaf || script == QuranScript.tajweed) {
+    if (script == QuranScript.mushaf) {
       // ──────────────────────────────────────────────────
-      // FULL PAGE MODES (Mushaf QCF or Tajweed Images)
+      // FULL PAGE MODES (Mushaf QCF Vector)
       // ──────────────────────────────────────────────────
       return _FullPageViewer(
         initialPage: quranProvider.currentPage,
@@ -526,6 +552,128 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       ),
     );
   }
+
+  void _showAppearanceSettings(BuildContext context) {
+    final isPremium = context.read<PremiumProvider>().isPremium;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.backgroundSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Consumer<SettingsProvider>(
+          builder: (context, settings, _) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'APPEARANCE',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Text Size (for text modes)
+                  if (settings.quranScript != QuranScript.mushaf) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.format_size_rounded, color: AppTheme.textSecondary, size: 20),
+                        const SizedBox(width: 12),
+                        const Text('Text Size'),
+                        const Spacer(),
+                        Slider(
+                          value: settings.quranFontSize,
+                          min: 18,
+                          max: 48,
+                          activeColor: AppTheme.primaryGreen,
+                          onChanged: (val) => settings.setQuranFontSize(val),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 32),
+                  ],
+
+                  // Mushaf Themes (Premium)
+                  Row(
+                    children: [
+                      const Text(
+                        'PAPER STYLE',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      if (!isPremium)
+                        const Icon(Icons.lock_rounded, size: 14, color: AppTheme.premiumGold),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _ThemeOption(
+                        name: 'White',
+                        color: Colors.white,
+                        isSelected: settings.mushafTheme == MushafTheme.white,
+                        onTap: () => settings.setMushafTheme(MushafTheme.white),
+                      ),
+                      _ThemeOption(
+                        name: 'Cream',
+                        color: const Color(0xFFF4ECD8),
+                        isSelected: settings.mushafTheme == MushafTheme.cream,
+                        onTap: () {
+                          if (isPremium) {
+                            settings.setMushafTheme(MushafTheme.cream);
+                          } else {
+                            Navigator.pop(context);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
+                          }
+                        },
+                      ),
+                      _ThemeOption(
+                        name: 'Dark',
+                        color: const Color(0xFF1A1A1A),
+                        isSelected: settings.mushafTheme == MushafTheme.dark,
+                        onTap: () {
+                          if (isPremium) {
+                            settings.setMushafTheme(MushafTheme.dark);
+                          } else {
+                            Navigator.pop(context);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
+                          }
+                        },
+                      ),
+                      _ThemeOption(
+                        name: 'Night',
+                        color: const Color(0xFF0D1628),
+                        isSelected: settings.mushafTheme == MushafTheme.night,
+                        onTap: () {
+                          if (isPremium) {
+                            settings.setMushafTheme(MushafTheme.night);
+                          } else {
+                            Navigator.pop(context);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -553,13 +701,32 @@ class _FullPageViewer extends StatefulWidget {
 
 class _FullPageViewerState extends State<_FullPageViewer> {
   int _currentPage = 1;
-  int? _tajweedViewIndex;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
     _currentPage = widget.initialPage;
-    _tajweedViewIndex = (_currentPage - 1) + 9;
+    _pageController = PageController(initialPage: _currentPage - 1);
+  }
+
+  @override
+  void didUpdateWidget(_FullPageViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPage != widget.initialPage) {
+      if (mounted) {
+        setState(() => _currentPage = widget.initialPage);
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(widget.initialPage - 1);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -572,99 +739,67 @@ class _FullPageViewerState extends State<_FullPageViewer> {
       onTap: () => quranProvider.toggleUI(),
       child: Stack(
         children: [
-          // Render based on selected script
-          if (settings.quranScript == QuranScript.tajweed)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: PageView.builder(
-                controller: PageController(
-                    initialPage: _tajweedViewIndex ?? ((_currentPage - 1) + 9)),
-                reverse: true, // Read right-to-left
-                itemCount: 624,
-                onPageChanged: (index) {
-                  int mushafEquivalentPage = index - 8;
-                  if (mushafEquivalentPage < 1) mushafEquivalentPage = 1;
-                  if (mushafEquivalentPage > 604) mushafEquivalentPage = 604;
+          Container(
+            color: settings.mushafTheme == MushafTheme.white
+                ? Colors.white
+                : settings.mushafTheme == MushafTheme.cream
+                    ? const Color(0xFFF4ECD8)
+                    : settings.mushafTheme == MushafTheme.dark
+                        ? const Color(0xFF1A1A1A)
+                        : const Color(0xFF0D1628),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: PageviewQuran(
+                initialPageNumber: _currentPage,
+                sp: 1.0,
+                h: 1.0,
+                theme: QcfThemeData(
+                  customHeaderBuilder: (suraNumber) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      margin: const EdgeInsets.only(top: 10, bottom: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppTheme.primaryGreen
+                                .withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        "surah${suraNumber.toString().padLeft(3, '0')}",
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'surahname',
+                          package: 'qcf_quran',
+                          fontSize: 32,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                onPageChanged: (page) {
+                  if (mounted) {
+                    setState(() => _currentPage = page);
+                  }
+                  widget.onPageChanged(page);
 
-                  setState(() {
-                    _tajweedViewIndex = index;
-                    _currentPage = mushafEquivalentPage;
-                  });
-                  widget.onPageChanged(mushafEquivalentPage);
-
-                  // Update Last Read on page change
+                  // Update Last Read
                   final currentSurah =
                       context.read<QuranProvider>().currentSurah;
                   if (currentSurah != null) {
                     context.read<QuranProvider>().updateLastRead(
                           currentSurah,
-                          pageNumber: mushafEquivalentPage,
+                          pageNumber: page,
                           scriptMode: settings.quranScript.name,
                         );
                   }
                 },
-                itemBuilder: (context, index) {
-                  return MushafPageView(pageNumber: index + 1);
-                },
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: PageviewQuran(
-                  initialPageNumber: _currentPage,
-                  sp: 1.0,
-                  h: 1.0,
-                  theme: QcfThemeData(
-                    customHeaderBuilder: (suraNumber) {
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        margin: const EdgeInsets.only(top: 10, bottom: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color:
-                                  AppTheme.primaryGreen.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          "surah${suraNumber.toString().padLeft(3, '0')}",
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'surahname',
-                            package: 'qcf_quran',
-                            fontSize: 32,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  onPageChanged: (page) {
-                    setState(() {
-                      _currentPage = page;
-                      _tajweedViewIndex =
-                          (page - 1) + 9; // Match original indexing
-                    });
-                    widget.onPageChanged(page);
-
-                    // Update Last Read
-                    final currentSurah =
-                        context.read<QuranProvider>().currentSurah;
-                    if (currentSurah != null) {
-                      context.read<QuranProvider>().updateLastRead(
-                            currentSurah,
-                            pageNumber: page,
-                            scriptMode: settings.quranScript.name,
-                          );
-                    }
-                  },
-                ),
               ),
             ),
+          ),
 
           // Animated Bottom Controls Area
           AnimatedPositioned(
@@ -698,7 +833,7 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Page ${settings.quranScript == QuranScript.tajweed ? (_tajweedViewIndex ?? 0) + 1 : _currentPage} of ${settings.quranScript == QuranScript.tajweed ? 624 : 604}',
+                      'Page $_currentPage of 604',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -900,6 +1035,64 @@ class _AyahCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String name;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.name,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? AppTheme.primaryGreen : AppTheme.divider,
+                width: isSelected ? 3 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : null,
+            ),
+            child: isSelected
+                ? const Icon(Icons.check_rounded, color: AppTheme.primaryGreen)
+                : null,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
             ),
           ),
         ],

@@ -12,6 +12,7 @@ import 'providers/quran_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/tajwid_progress_provider.dart';
 import 'providers/sheikh_provider.dart';
+import 'services/offline_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StreakProvider(prefs)),
         ChangeNotifierProvider(create: (_) => TajwidProgressProvider()),
         ChangeNotifierProvider(create: (_) => SheikhProvider()),
+        ChangeNotifierProvider(create: (_) => OfflineService()),
       ],
       child: const TajwidCoachApp(),
     ),

@@ -6,6 +6,7 @@ import '../../utils/tajwid_rules_data.dart';
 import '../../models/recording_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sheikh_provider.dart';
+import '../store/paywall_screen.dart';
 
 class AIFeedbackScreen extends StatefulWidget {
   final TajwidAnalysisResult result;
@@ -66,7 +67,7 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
               ),
               child: Row(
                 children: [
-                  const Text('🌟', style: TextStyle(fontSize: 24)),
+                  const Icon(Icons.stars_rounded, color: AppTheme.accentAmber, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -85,7 +86,7 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
 
             // Weak Words
             if (widget.result.weakWords.isNotEmpty) ...[
-              _buildSectionTitle('🔴 Words Needing Attention'),
+              _buildSectionTitle('Words Needing Attention', icon: Icons.error_rounded, color: AppTheme.qalqalahRed),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -129,8 +130,14 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
             ],
 
             // Rule Breakdown
-            _buildSectionTitle('📊 Tajwid Rule Breakdown'),
+            _buildSectionTitle('Tajwid Rule Breakdown', icon: Icons.bar_chart_rounded, color: AppTheme.primaryGreen),
             ...widget.result.ruleScores.map((rs) => _RuleScoreCard(ruleScore: rs)),
+            
+            if (widget.result.lockedRulesCount > 0) ...[
+              const SizedBox(height: 12),
+              _LockedRulesBanner(count: widget.result.lockedRulesCount),
+            ],
+            
             const SizedBox(height: 16),
 
             // Action Buttons
@@ -167,7 +174,7 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
               ),
               child: Row(
                 children: [
-                  const Text('👨‍🏫', style: TextStyle(fontSize: 28)),
+                  const Icon(Icons.school_rounded, color: Colors.white, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -278,18 +285,26 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
     setState(() => _isSubmitting = false);
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon, Color? color}) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: color ?? AppTheme.textPrimary, size: 18),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -430,7 +445,7 @@ class _RuleScoreCard extends StatelessWidget {
                   if (ruleScore.isWeak)
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Text('⚠️', style: TextStyle(fontSize: 14)),
+                      child: Icon(Icons.warning_rounded, color: AppTheme.qalqalahRed, size: 16),
                     ),
                 ],
               ),
@@ -460,6 +475,72 @@ class _RuleScoreCard extends StatelessWidget {
           Text(
             ruleScore.feedback,
             style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedRulesBanner extends StatelessWidget {
+  final int count;
+  const _LockedRulesBanner({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.premiumGold.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.premiumGold.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_rounded, color: AppTheme.premiumGold, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$count more rules detected!',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.premiumGold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Unlock the full 25-rule AI engine to see feedback on every mistake.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.premiumGold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Upgrade to Premium',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
           ),
         ],
       ),

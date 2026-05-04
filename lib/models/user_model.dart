@@ -21,6 +21,8 @@ class UserModel {
   final int streakFreezes;
   final String? masjid;
   final String? city;
+  final String? familyCode;
+  final int sheikhCredits;
 
   const UserModel({
     required this.uid,
@@ -45,6 +47,8 @@ class UserModel {
     this.streakFreezes = 2,
     this.masjid,
     this.city,
+    this.familyCode,
+    this.sheikhCredits = 0,
   });
 
   bool get isPremium => premiumStatus != 'free';
@@ -75,6 +79,8 @@ class UserModel {
       streakFreezes: map['streakFreezes'] ?? 2,
       masjid: map['masjid'],
       city: map['city'],
+      familyCode: map['familyCode'],
+      sheikhCredits: map['sheikhCredits'] ?? 0,
     );
   }
 
@@ -102,6 +108,8 @@ class UserModel {
       'streakFreezes': streakFreezes,
       'masjid': masjid,
       'city': city,
+      'familyCode': familyCode,
+      'sheikhCredits': sheikhCredits,
     };
   }
 
@@ -145,6 +153,8 @@ class UserModel {
       streakFreezes: streakFreezes ?? this.streakFreezes,
       masjid: masjid ?? this.masjid,
       city: city ?? this.city,
+      familyCode: familyCode, // Pass through
+      sheikhCredits: sheikhCredits,
     );
   }
 }

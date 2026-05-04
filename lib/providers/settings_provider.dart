@@ -13,6 +13,20 @@ enum QuranScript {
   tajweed,
 }
 
+enum MushafTheme {
+  /// Pristine white (standard)
+  white,
+
+  /// Soft cream/old paper (eye-friendly)
+  cream,
+
+  /// Dark charcoal background
+  dark,
+
+  /// High-contrast night mode (inverted)
+  night,
+}
+
 enum TranslationLanguage {
   english,
   urdu,
@@ -26,17 +40,19 @@ class SettingsProvider extends ChangeNotifier {
   static const _showTranslationKey = 'show_translation';
   static const _darkModeKey = 'dark_mode';
 
-  QuranScript _quranScript = QuranScript.mushaf;
+  QuranScript _quranScript = QuranScript.indoPak;
   TranslationLanguage _translationLanguage = TranslationLanguage.english;
   double _quranFontSize = 28.0;
   bool _showTranslation = true;
   bool _isDarkMode = false;
+  MushafTheme _mushafTheme = MushafTheme.white;
 
   QuranScript get quranScript => _quranScript;
   TranslationLanguage get translationLanguage => _translationLanguage;
   double get quranFontSize => _quranFontSize;
   bool get showTranslation => _showTranslation;
   bool get isDarkMode => _isDarkMode;
+  MushafTheme get mushafTheme => _mushafTheme;
 
   /// Whether to show Tajweed colors (only relevant in tajweed script mode).
   bool get showTajweedColors => _quranScript == QuranScript.tajweed;
@@ -109,9 +125,11 @@ class SettingsProvider extends ChangeNotifier {
     _quranFontSize = prefs.getDouble(_fontSizeKey) ?? 28.0;
     _showTranslation = prefs.getBool(_showTranslationKey) ?? true;
     _isDarkMode = prefs.getBool(_darkModeKey) ?? false;
+    final themeIndex = prefs.getInt('mushaf_theme') ?? 0;
 
     _quranScript = QuranScript.values[scriptIndex.clamp(0, QuranScript.values.length - 1)];
     _translationLanguage = TranslationLanguage.values[translationIndex.clamp(0, TranslationLanguage.values.length - 1)];
+    _mushafTheme = MushafTheme.values[themeIndex.clamp(0, MushafTheme.values.length - 1)];
 
     notifyListeners();
   }
@@ -149,5 +167,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_darkModeKey, dark);
+  }
+
+  Future<void> setMushafTheme(MushafTheme theme) async {
+    _mushafTheme = theme;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('mushaf_theme', theme.index);
   }
 }

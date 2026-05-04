@@ -18,6 +18,7 @@ import '../../providers/tajwid_progress_provider.dart';
 import '../../providers/quran_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../widgets/tajweed_text.dart';
 import 'ai_feedback_screen.dart';
 
@@ -134,7 +135,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Text('🎉', style: TextStyle(fontSize: 28)),
+            Icon(Icons.celebration_rounded, color: AppTheme.accentAmber, size: 32),
             SizedBox(width: 10),
             Text('Drill Complete!'),
           ],
@@ -272,6 +273,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
     _pulseController.stop();
     _pulseController.reset();
 
+    final isPremium = context.read<PremiumProvider>().isPremium;
     final path = await _audioRecorder.stop();
 
     setState(() {
@@ -281,6 +283,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
     });
 
     final ayah = _currentAyah!;
+
     final result = await TajwidAnalysisService.analyze(
       ayahReference: '${ayah.surahNumber}:${ayah.ayahNumber}',
       referenceText: ayah.arabicText,
@@ -288,6 +291,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
       audioFile:
           _currentRecordingPath != null ? File(_currentRecordingPath!) : null,
       targetRuleId: _selectedRule?.id,
+      isPremium: isPremium,
     );
 
     // Record streak + XP
@@ -410,9 +414,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
-                    child: Text('🎯', style: TextStyle(fontSize: 26)),
-                  ),
+                    child: const Icon(Icons.track_changes_rounded, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -698,7 +700,7 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
             ),
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 18)),
+                const Icon(Icons.lightbulb_rounded, color: AppTheme.accentAmber, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -718,13 +720,21 @@ class _WeakSpotsScreenState extends State<WeakSpotsScreen>
           if (_isAnalyzing) ...[
             const CircularProgressIndicator(color: AppTheme.qalqalahRed),
             const SizedBox(height: 16),
-            const Text(
-              '🤖 Analyzing your recitation...',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.qalqalahRed,
-                fontWeight: FontWeight.w500,
-              ),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.auto_awesome_rounded,
+                    color: AppTheme.qalqalahRed, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'Analyzing your recitation...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.qalqalahRed,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ] else ...[
             ScaleTransition(

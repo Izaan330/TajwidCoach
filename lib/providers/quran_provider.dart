@@ -257,8 +257,30 @@ class QuranProvider extends ChangeNotifier {
 
   void goToPage(int page) {
     if (page < 1 || page > 604) return;
+    if (_currentPage == page) return;
     _currentPage = page;
     notifyListeners();
+  }
+
+  /// Silently update the current page (without notification, used during scrolling)
+  void setCurrentPage(int page) {
+    if (page < 1 || page > 604) return;
+    if (_currentPage == page) return;
+    _currentPage = page;
+    // We don't notify here to avoid rebuild loops during scroll, 
+    // unless you want the UI indicators to update immediately.
+    notifyListeners();
+  }
+
+  /// Returns the index in _currentAyahs of the first ayah on the given page.
+  int findFirstAyahIndexOnPage(int pageNumber) {
+    if (_currentAyahs.isEmpty) return 0;
+    for (int i = 0; i < _currentAyahs.length; i++) {
+      if (_currentAyahs[i].pageNumber >= pageNumber) {
+        return i;
+      }
+    }
+    return 0;
   }
 
   /// Navigate directly to a Surah's starting page in the Mushaf.

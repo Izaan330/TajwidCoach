@@ -8,6 +8,7 @@ class StreakBadge {
   final String name;
   final int requiredDays;
   final String description;
+  final bool isPremiumOnly;
 
   const StreakBadge({
     required this.id,
@@ -15,6 +16,7 @@ class StreakBadge {
     required this.name,
     required this.requiredDays,
     required this.description,
+    this.isPremiumOnly = false,
   });
 }
 
@@ -55,11 +57,29 @@ class StreakService {
       requiredDays: 365,
       description: '365 days — a full year of Quran',
     ),
+    StreakBadge(
+      id: 'khadim',
+      icon: Icons.verified_user_rounded,
+      name: 'Khadim al-Quran',
+      requiredDays: 0,
+      description: 'Official Premium Subscriber',
+      isPremiumOnly: true,
+    ),
+    StreakBadge(
+      id: 'family_shield',
+      icon: Icons.family_restroom_rounded,
+      name: 'Family Shield',
+      requiredDays: 0,
+      description: 'Part of a Family Plan',
+      isPremiumOnly: true,
+    ),
   ];
 
   final SharedPreferences _prefs;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _userId;
+  bool isUnlimited = false;
+  int maxFreezes = 2;
 
   StreakService(this._prefs);
 
@@ -107,10 +127,19 @@ class StreakService {
   String? get lastPracticeDate => _prefs.getString('last_practice_date');
   String? get lastFrozenDate => _prefs.getString('last_frozen_date');
   List<String> get earnedBadges => _prefs.getStringList('earned_badges') ?? [];
-  int get streakFreezes => _prefs.getInt('streak_freezes') ?? 2;
+  int get streakFreezes {
+    if (isUnlimited) return 999;
+    return _prefs.getInt('streak_freezes') ?? maxFreezes;
+  }
 
   Future<void> addFreezes(int count) async {
-    await _setStreakFreezes(streakFreezes + count);
+    if (isUnlimited) return;
+    int current = streakFreezes;
+    if (current + count > maxFreezes) {
+      await _setStreakFreezes(maxFreezes);
+    } else {
+      await _setStreakFreezes(current + count);
+    }
     if (_userId != null) await syncToFirestore();
   }
 
@@ -132,7 +161,9 @@ class StreakService {
     if (lastFrozenDate == dateToFreeze) return false; // Already frozen
 
     await _prefs.setString('last_frozen_date', dateToFreeze);
-    await _setStreakFreezes(streakFreezes - 1);
+    if (!isUnlimited) {
+      await _setStreakFreezes(streakFreezes - 1);
+    }
     
     if (_userId != null) await syncToFirestore();
     return true;

@@ -12,6 +12,7 @@ import '../../services/quran_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/surah_model.dart';
 import '../../providers/quran_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/tajwid_analysis_service.dart';
@@ -165,6 +166,7 @@ class _PracticeScreenState extends State<PracticeScreen>
     _pulseController.stop();
     _pulseController.reset();
 
+    final isPremium = context.read<PremiumProvider>().isPremium;
     final path = await _audioRecorder.stop();
 
     // REMOVED: _speechToText.stop() (not needed since we removed listen())
@@ -184,6 +186,7 @@ class _PracticeScreenState extends State<PracticeScreen>
       durationSeconds: _recordingSeconds,
       audioFile: _currentRecordingPath != null ? File(_currentRecordingPath!) : null,
       targetRuleId: widget.targetRuleId,
+      isPremium: isPremium,
     );
 
     // Record streak
@@ -467,13 +470,21 @@ class _PracticeScreenState extends State<PracticeScreen>
             if (_isAnalyzing) ...[
               const CircularProgressIndicator(color: AppTheme.primaryGreen),
               const SizedBox(height: 16),
-              const Text(
-                '🤖 AI analyzing your Tajwid...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.primaryGreen,
-                  fontWeight: FontWeight.w500,
-                ),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_awesome_rounded,
+                      color: AppTheme.primaryGreen, size: 20),
+                  SizedBox(width: 10),
+                  Text(
+                    'AI analyzing your Tajwid...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppTheme.primaryGreen,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ]
             // Record button
