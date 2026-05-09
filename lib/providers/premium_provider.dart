@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/revenue_cat_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Premium Tier Enum
@@ -70,9 +70,6 @@ class PremiumFeature {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PremiumProvider extends ChangeNotifier {
-  static const _appleApiKey = 'appl_api_key_here';
-  static const _googleApiKey = 'goog_api_key_here';
-
   PremiumTier _tier = PremiumTier.free;
   bool _isLoading = false;
   String _currentPlanId = 'free';
@@ -84,7 +81,9 @@ class PremiumProvider extends ChangeNotifier {
     
     if (uid == null) {
       try {
-        await Purchases.logOut();
+        if (RevenueCatService.isConfigured) {
+          await RevenueCatService.logOut();
+        }
       } catch (e) {
         debugPrint('RevenueCat logout error: $e');
       }
@@ -102,9 +101,13 @@ class PremiumProvider extends ChangeNotifier {
 
     try {
       // 1. RevenueCat Sync
-      await Purchases.logIn(uid);
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-      _updateFromCustomerInfo(customerInfo);
+      if (RevenueCatService.isConfigured) {
+        await RevenueCatService.logIn(uid);
+        final customerInfo = await RevenueCatService.getCustomerInfo();
+        if (customerInfo != null) {
+          _updateFromCustomerInfo(customerInfo);
+        }
+      }
       
       // 2. Fetch family/credits from Firestore
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -322,29 +325,18 @@ class PremiumProvider extends ChangeNotifier {
   }
 
   Future<void> _initRevenueCat() async {
-    if (kIsWeb) return;
-
-    await Purchases.setLogLevel(LogLevel.debug);
-
-    PurchasesConfiguration? configuration;
-    if (Platform.isAndroid) {
-      configuration = PurchasesConfiguration(_googleApiKey);
-    } else if (Platform.isIOS) {
-      configuration = PurchasesConfiguration(_appleApiKey);
-    }
-
-    if (configuration != null) {
-      await Purchases.configure(configuration);
+    if (RevenueCatService.isConfigured) {
+      await RevenueCatService.init();
       _checkStatus();
     }
   }
 
   Future<void> _checkStatus() async {
-    try {
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+    if (!RevenueCatService.isConfigured) return;
+    
+    final customerInfo = await RevenueCatService.getCustomerInfo();
+    if (customerInfo != null) {
       _updateFromCustomerInfo(customerInfo);
-    } catch (e) {
-      debugPrint('Error fetching customer info: $e');
     }
   }
 
@@ -457,7 +449,7 @@ class PremiumProvider extends ChangeNotifier {
 
     try {
       // If we're using placeholder keys, skip RevenueCat and go to mock
-      if (_appleApiKey == 'appl_api_key_here' || _googleApiKey == 'goog_api_key_here') {
+      if (!RevenueCatService.isConfigured) {
         await Future.delayed(const Duration(seconds: 1));
         _currentPlanId = planId;
         _tier = _tierFromPlanId(planId);
@@ -467,26 +459,15 @@ class PremiumProvider extends ChangeNotifier {
           _sheikhCredits += 100; // ₹100 initial credit
         }
       } else {
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null) {
-          final package = offerings.current!.availablePackages.firstWhere(
-            (pkg) => pkg.storeProduct.identifier == planId,
-            orElse: () => offerings.current!.availablePackages.first,
-          );
-          final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
-          _updateFromCustomerInfo(purchaseResult.customerInfo);
-        } else {
-          final products = await Purchases.getProducts([planId]);
-          if (products.isNotEmpty) {
-            final purchaseResult = await Purchases.purchase(PurchaseParams.storeProduct(products.first));
-            _updateFromCustomerInfo(purchaseResult.customerInfo);
-          }
+        final customerInfo = await RevenueCatService.purchasePlan(planId);
+        if (customerInfo != null) {
+          _updateFromCustomerInfo(customerInfo);
         }
       }
     } catch (e) {
       debugPrint('Purchase error: $e');
       // Even on error, if in dev mode, we can mock it
-      if (_appleApiKey == 'appl_api_key_here' || _googleApiKey == 'goog_api_key_here') {
+      if (!RevenueCatService.isConfigured) {
         _currentPlanId = planId;
         _tier = _tierFromPlanId(planId);
       }
@@ -501,8 +482,15 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      CustomerInfo customerInfo = await Purchases.restorePurchases();
-      _updateFromCustomerInfo(customerInfo);
+      if (RevenueCatService.isConfigured) {
+        final customerInfo = await RevenueCatService.restorePurchases();
+        if (customerInfo != null) {
+          _updateFromCustomerInfo(customerInfo);
+        }
+      } else {
+        await Future.delayed(const Duration(seconds: 1));
+        debugPrint('RevenueCat: Mock restore successful');
+      }
     } catch (e) {
       debugPrint('Restore error: $e');
     }

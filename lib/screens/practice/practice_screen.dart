@@ -22,6 +22,7 @@ import '../../providers/tajwid_progress_provider.dart';
 import 'ai_feedback_screen.dart';
 import 'weak_spots_screen.dart';
 import 'hifz_mode_screen.dart';
+import '../store/paywall_screen.dart';
 
 class PracticeScreen extends StatefulWidget {
   final SurahModel? surah;
@@ -555,9 +556,17 @@ class _PracticeScreenState extends State<PracticeScreen>
                     title: 'Weak Spots',
                     subtitle: 'Target problem rules',
                     color: AppTheme.qalqalahRed,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const WeakSpotsScreen()),
-                    ),
+                    onTap: () {
+                      if (!context.read<PremiumProvider>().isPremium) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const WeakSpotsScreen()),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -567,9 +576,17 @@ class _PracticeScreenState extends State<PracticeScreen>
                     title: 'Hifz Mode',
                     subtitle: 'Progressive word hiding',
                     color: AppTheme.idghamBlue,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HifzModeScreen()),
-                    ),
+                    onTap: () {
+                      if (!context.read<PremiumProvider>().isPremium) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const HifzModeScreen()),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -604,6 +621,8 @@ class _PracticeModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPremium = context.watch<PremiumProvider>().isPremium;
+
     return Material(
       color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(14),
@@ -621,13 +640,21 @@ class _PracticeModeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  if (!isPremium)
+                    Icon(Icons.lock_rounded,
+                        color: color.withValues(alpha: 0.5), size: 16),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
@@ -641,7 +668,8 @@ class _PracticeModeCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                style:
+                    const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
             ],
           ),

@@ -32,12 +32,12 @@ This guide details how to configure RevenueCat for the TajwidCoach premium subsc
    - Attach the imported products to this entitlement.
 
 5. **Update Flutter Code:**
-   Open `lib/providers/premium_provider.dart` (or your main initialization file) and ensure `Purchases.configure()` is called with your specific RevenueCat API Key:
+   Open `lib/services/revenue_cat_service.dart` and ensure your specific RevenueCat API Keys are provided:
    
    ```dart
    // Add your public SDK keys here once generated from RevenueCat
-   const _appleApiKey = 'appl_api_key_here';
-   const _googleApiKey = 'goog_api_key_here';
+   static const _appleApiKey = 'appl_api_key_here';
+   static const _googleApiKey = 'goog_api_key_here';
    ```
 
 6. **Testing:**

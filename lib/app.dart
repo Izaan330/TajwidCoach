@@ -22,7 +22,7 @@ class TajwidCoachApp extends StatelessWidget {
       designSize: const Size(392, 800),
       minTextAdapt: true,
       builder: (context, child) => MaterialApp(
-        title: 'TajwidCoach',
+        title: 'Quran Pro',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const AuthWrapper(),
@@ -50,11 +50,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _initServices() async {
+    final startTime = DateTime.now();
+    
     final quran = context.read<QuranProvider>();
     final settings = context.read<SettingsProvider>();
 
     await settings.loadSettings();
     quran.init();
+
+    // Ensure splash screen shows for at least 1500ms for premium experience
+    final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+    if (elapsed < 1500) {
+      await Future.delayed(Duration(milliseconds: 1500 - elapsed));
+    }
 
     if (mounted) {
       setState(() {
@@ -129,7 +137,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
-    if (!_isInitialized) {
+    // Stay on splash screen until BOTH internal services AND auth state are ready
+    if (!_isInitialized || !auth.isAuthDetermined) {
       return const SplashScreen();
     }
 

@@ -30,11 +30,25 @@ class StreakService {
       description: 'Started your Quran journey',
     ),
     StreakBadge(
+      id: 'three_days',
+      icon: Icons.timer_3_rounded,
+      name: 'Steady Start',
+      requiredDays: 3,
+      description: '3 days of consistent reading',
+    ),
+    StreakBadge(
       id: 'week',
       icon: Icons.local_fire_department_rounded,
       name: 'Week Warrior',
       requiredDays: 7,
       description: '7 days of consistent practice',
+    ),
+    StreakBadge(
+      id: 'fortnight',
+      icon: Icons.auto_awesome_rounded,
+      name: 'Fortnight Faithful',
+      requiredDays: 14,
+      description: '2 weeks of dedication',
     ),
     StreakBadge(
       id: 'month',
@@ -44,6 +58,13 @@ class StreakService {
       description: '30 days of dedication',
     ),
     StreakBadge(
+      id: 'fifty',
+      icon: Icons.brightness_3_rounded,
+      name: 'Golden Crescent',
+      requiredDays: 50,
+      description: '50 days of light',
+    ),
+    StreakBadge(
       id: 'hundred',
       icon: Icons.mosque_rounded,
       name: 'Century Prophet',
@@ -51,11 +72,32 @@ class StreakService {
       description: '100 days — true devotion',
     ),
     StreakBadge(
+      id: 'two_hundred',
+      icon: Icons.trending_up_rounded,
+      name: 'Persistent Path',
+      requiredDays: 200,
+      description: '200 days of journey',
+    ),
+    StreakBadge(
       id: 'year',
       icon: Icons.workspace_premium_rounded,
       name: 'Hafiz Journey',
       requiredDays: 365,
       description: '365 days — a full year of Quran',
+    ),
+    StreakBadge(
+      id: 'five_hundred',
+      icon: Icons.military_tech_rounded,
+      name: 'Legendary Legacy',
+      requiredDays: 500,
+      description: '500 days of devotion',
+    ),
+    StreakBadge(
+      id: 'thousand',
+      icon: Icons.auto_stories_rounded,
+      name: 'Eternal Light',
+      requiredDays: 1000,
+      description: '1000 days of pure devotion',
     ),
     StreakBadge(
       id: 'khadim',

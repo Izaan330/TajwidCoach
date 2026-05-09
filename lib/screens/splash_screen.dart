@@ -2,14 +2,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_theme.dart';
 import '../providers/streak_provider.dart';
 import 'main_navigation.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SPLASH SCREEN  (unchanged logic, same dark background as before)
-// ─────────────────────────────────────────────────────────────────────────────
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -28,26 +27,27 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
+    // Fade in very quickly to ensure it's never 'dim' for too long
     _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
       ),
     );
-    _scaleIn = Tween<double>(begin: 0.7, end: 1.0).animate(
+    _scaleIn = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
       ),
     );
-    _slideUp = Tween<double>(begin: 30, end: 0).animate(
+    _slideUp = Tween<double>(begin: 20, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
       ),
     );
 
@@ -75,42 +75,49 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // --- PREMIUM LOGO CONTAINER ---
                     Transform.scale(
                       scale: _scaleIn.value,
                       child: Opacity(
                         opacity: _fadeIn.value,
                         child: Container(
-                          width: 140,
-                          height: 140,
+                          width: 160.w,
+                          height: 160.w,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(25),
-                            borderRadius: BorderRadius.circular(35),
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.white.withAlpha(40),
+                                Colors.white.withAlpha(10),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white.withAlpha(50),
-                              width: 1.5,
+                              color: const Color(0xFFFFD700).withAlpha(100),
+                              width: 2.w,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryGreen.withAlpha(75),
+                                color: const Color(0xFFFFD700).withAlpha(60),
                                 blurRadius: 40,
-                                spreadRadius: 5,
+                                spreadRadius: 10,
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withAlpha(100),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
                           child: Center(
                             child: ShaderMask(
-                              shaderCallback: (bounds) =>
-                                  const LinearGradient(
-                                colors: [
-                                  Color(0xFFFFD700),
-                                  Color(0xFFE6BE8A)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Color(0xFFFFD700), Color(0xFFFFF8E1)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ).createShader(bounds),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.auto_stories_rounded,
-                                size: 80,
+                                size: 90.sp,
                                 color: Colors.white,
                               ),
                             ),
@@ -118,47 +125,55 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(height: 56.h),
+                    // --- TEXT ELEMENTS ---
                     Transform.translate(
                       offset: Offset(0, _slideUp.value),
                       child: Opacity(
                         opacity: _fadeIn.value,
                         child: Column(
                           children: [
-                            const Text(
-                              'TajwidCoach',
-                              style: TextStyle(
-                                fontSize: 42,
+                            Text(
+                              'Quran Pro',
+                              style: GoogleFonts.outfit(
+                                fontSize: 52.sp,
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: -1.0,
                                 shadows: [
-                                  Shadow(
-                                    color: Colors.black26,
+                                  const Shadow(
+                                    color: Colors.black45,
                                     offset: Offset(0, 4),
-                                    blurRadius: 10,
+                                    blurRadius: 12,
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 8.h),
                             Text(
                               'PERFECT YOUR RECITATION',
-                              style: TextStyle(
-                                fontSize: 13,
-                                letterSpacing: 3.5,
-                                color: Colors.white.withAlpha(180),
-                                fontWeight: FontWeight.w600,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12.sp,
+                                letterSpacing: 4.0,
+                                color: Colors.white, // Changed to pure white for maximum readability
+                                fontWeight: FontWeight.w700, // Increased font weight
                               ),
                             ),
-                            const SizedBox(height: 32),
-                            const Text(
+                            SizedBox(height: 40.h),
+                            Text(
                               'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
                               style: TextStyle(
-                                fontSize: 24,
-                                color: Color(0xFFFFD700),
+                                fontSize: 28.sp,
+                                color: const Color(0xFFFFD700),
                                 fontFamily: 'AmiriQuran',
                                 fontWeight: FontWeight.w500,
+                                shadows: const [
+                                  Shadow(
+                                    color: Colors.black45, // Darker shadow for better contrast against green
+                                    offset: Offset(0, 2),
+                                    blurRadius: 4,
+                                  ),
+                                ],
                               ),
                               textDirection: TextDirection.rtl,
                             ),
@@ -166,7 +181,8 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 64),
+                    SizedBox(height: 72.h),
+                    // --- STREAK BADGE ---
                     if (streak > 0)
                       Transform.translate(
                         offset: Offset(0, _slideUp.value + 20),
@@ -174,36 +190,39 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _fadeIn.value,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
+                                horizontal: 28, vertical: 14),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF2E7D32),
-                                  Color(0xFF1B5E20)
-                                ],
+                                colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ),
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(40),
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 15,
-                                  offset: Offset(0, 5),
+                                  color: Colors.black38,
+                                  blurRadius: 20,
+                                  offset: Offset(0, 8),
                                 ),
                               ],
+                              border: Border.all(
+                                color: Colors.white12,
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.local_fire_department_rounded,
-                                    color: AppTheme.accentAmber, size: 24),
+                                    color: AppTheme.accentAmber, size: 28),
                                 const SizedBox(width: 12),
                                 Text(
                                   '$streak-DAY STREAK!',
-                                  style: const TextStyle(
+                                  style: GoogleFonts.outfit(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    letterSpacing: 1.0,
+                                    fontSize: 16,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
                               ],
@@ -216,18 +235,19 @@ class _SplashScreenState extends State<SplashScreen>
               );
             },
           ),
-          const Positioned(
-            bottom: 40,
+          // --- FOOTER ---
+          Positioned(
+            bottom: 50,
             left: 0,
             right: 0,
             child: Opacity(
-              opacity: 0.4,
+              opacity: 0.6,
               child: Center(
                 child: Text(
                   'MADE WITH SPIRITUAL CARE',
-                  style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 2,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    letterSpacing: 2.5,
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -250,12 +270,12 @@ class _SplashBackground extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.2,
           colors: [
-            Color(0xFF004D40),
-            Color(0xFF00251A),
+            Color(0xFF004D40), // Emerald
+            Color(0xFF00251A), // Dark Forest
           ],
         ),
       ),
@@ -270,14 +290,14 @@ class _IslamicPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withAlpha(10)
+      ..color = Colors.white.withAlpha(15) // Even more subtle
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 0.8;
 
-    const spacing = 100.0;
+    const spacing = 120.0; // Larger spacing for cleaner look
     for (double x = 0; x < size.width + spacing; x += spacing) {
       for (double y = 0; y < size.height + spacing; y += spacing) {
-        _drawEightPointStar(canvas, Offset(x, y), 25, paint);
+        _drawEightPointStar(canvas, Offset(x, y), 30, paint);
       }
     }
   }

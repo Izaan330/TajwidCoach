@@ -7,6 +7,8 @@ import '../../theme/app_theme.dart';
 import 'privacy_policy_screen.dart';
 import '../progress/family_leaderboard_screen.dart';
 import '../store/paywall_screen.dart';
+import 'acknowledgments_screen.dart';
+import 'terms_of_use_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -151,6 +153,26 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+            ),
+          ),
+
+          _SettingsCard(
+            icon: Icons.favorite_rounded,
+            title: 'Acknowledgments',
+            subtitle: 'Attributions & Sources',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AcknowledgmentsScreen()),
+            ),
+          ),
+
+          _SettingsCard(
+            icon: Icons.description_rounded,
+            title: 'Terms of Use',
+            subtitle: 'Usage policy & takedown notice',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TermsOfUseScreen()),
             ),
           ),
 

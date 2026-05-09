@@ -10,6 +10,7 @@ import '../../models/surah_model.dart';
 import '../../providers/quran_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/quran_constants.dart';
+import '../../utils/tajweed_mapping.dart';
 import '../../services/quran_api_service.dart';
 import '../../widgets/tajweed_text.dart';
 import '../practice/practice_screen.dart';
@@ -126,7 +127,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     if (widget.initialPage != null) {
       quranProvider.goToPage(widget.initialPage!);
     } else {
-      quranProvider.goToSurah(widget.surah.number);
+      if (settings.quranScript == QuranScript.tajweed) {
+        final standardPage = surahStartPages[widget.surah.number] ?? 1;
+        final tajweedUIPage = TajweedMapping.getStartPage(widget.surah.number, standardPage);
+        quranProvider.goToSurah(widget.surah.number, tajweedPage: tajweedUIPage);
+      } else {
+        quranProvider.goToSurah(widget.surah.number);
+      }
     }
 
     // Track Last Read immediately on entry
@@ -141,6 +148,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       widget.surah.number,
       scriptEdition: settings.scriptEdition,
       translationEdition: settings.translationEdition,
+      preservePage: settings.quranScript == QuranScript.tajweed,
     );
   }
 
@@ -312,11 +320,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                     
                     // If switching TO a text mode from a full-page mode, 
                     // we'll need to scroll the list after the next frame
-                    final wasFullScreen = settings.quranScript == QuranScript.mushaf;
+                    final wasFullScreen = settings.quranScript == QuranScript.mushaf || 
+                                         settings.quranScript == QuranScript.tajweed;
+                    final wasTajweed = settings.quranScript == QuranScript.tajweed;
+                    final isTajweed = script == QuranScript.tajweed;
+                    
+                    if (wasTajweed && !isTajweed) {
+                      // Switch FROM Tajweed TO Standard
+                      if (quranProvider.currentPage > 604) {
+                        quranProvider.goToPage(604);
+                      }
+                    } else if (!wasTajweed && isTajweed) {
+                      // Switch FROM Standard TO Tajweed
+                      final tajUIPage = TajweedMapping.getStartPage(widget.surah.number, quranProvider.currentPage);
+                      quranProvider.goToPage(tajUIPage);
+                    }
                     
                     settings.setQuranScript(script);
 
-                    if (wasFullScreen && script != QuranScript.mushaf) {
+                    final isNewFullScreen = script == QuranScript.mushaf || 
+                                           script == QuranScript.tajweed;
+
+                    if (wasFullScreen && !isNewFullScreen) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToCurrentPage();
                       });
@@ -365,11 +390,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         value: QuranScript.tajweed,
                         child: Row(
                           children: [
-                            const Icon(Icons.color_lens_rounded,
+                            const Icon(Icons.palette_rounded,
                                 color: AppTheme.accentAmber, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
-                                child: Text('Tajweed Text',
+                                child: Text('Tajweed Mode (Images)',
                                     style: TextStyle(
                                         color: settings.quranScript ==
                                                 QuranScript.tajweed
@@ -389,11 +414,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   tooltip: 'Save Position',
                   onPressed: _manualSaveLastRead,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.text_format_rounded),
-                  tooltip: 'Appearance',
-                  onPressed: () => _showAppearanceSettings(context),
-                ),
+
                 if (!isFullScreenMode)
                   IconButton(
                     icon: const Icon(Icons.mic_rounded),
@@ -423,9 +444,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     QuranProvider quranProvider,
     SettingsProvider settings,
   ) {
-    if (script == QuranScript.mushaf) {
+    if (script == QuranScript.mushaf || script == QuranScript.tajweed) {
       // ──────────────────────────────────────────────────
-      // FULL PAGE MODES (Mushaf QCF Vector)
+      // FULL PAGE MODES (Mushaf QCF Vector or Tajweed Images)
       // ──────────────────────────────────────────────────
       return _FullPageViewer(
         initialPage: quranProvider.currentPage,
@@ -553,127 +574,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     );
   }
 
-  void _showAppearanceSettings(BuildContext context) {
-    final isPremium = context.read<PremiumProvider>().isPremium;
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.backgroundSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Consumer<SettingsProvider>(
-          builder: (context, settings, _) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'APPEARANCE',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textSecondary,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Text Size (for text modes)
-                  if (settings.quranScript != QuranScript.mushaf) ...[
-                    Row(
-                      children: [
-                        const Icon(Icons.format_size_rounded, color: AppTheme.textSecondary, size: 20),
-                        const SizedBox(width: 12),
-                        const Text('Text Size'),
-                        const Spacer(),
-                        Slider(
-                          value: settings.quranFontSize,
-                          min: 18,
-                          max: 48,
-                          activeColor: AppTheme.primaryGreen,
-                          onChanged: (val) => settings.setQuranFontSize(val),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 32),
-                  ],
-
-                  // Mushaf Themes (Premium)
-                  Row(
-                    children: [
-                      const Text(
-                        'PAPER STYLE',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 8),
-                      if (!isPremium)
-                        const Icon(Icons.lock_rounded, size: 14, color: AppTheme.premiumGold),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _ThemeOption(
-                        name: 'White',
-                        color: Colors.white,
-                        isSelected: settings.mushafTheme == MushafTheme.white,
-                        onTap: () => settings.setMushafTheme(MushafTheme.white),
-                      ),
-                      _ThemeOption(
-                        name: 'Cream',
-                        color: const Color(0xFFF4ECD8),
-                        isSelected: settings.mushafTheme == MushafTheme.cream,
-                        onTap: () {
-                          if (isPremium) {
-                            settings.setMushafTheme(MushafTheme.cream);
-                          } else {
-                            Navigator.pop(context);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
-                          }
-                        },
-                      ),
-                      _ThemeOption(
-                        name: 'Dark',
-                        color: const Color(0xFF1A1A1A),
-                        isSelected: settings.mushafTheme == MushafTheme.dark,
-                        onTap: () {
-                          if (isPremium) {
-                            settings.setMushafTheme(MushafTheme.dark);
-                          } else {
-                            Navigator.pop(context);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
-                          }
-                        },
-                      ),
-                      _ThemeOption(
-                        name: 'Night',
-                        color: const Color(0xFF0D1628),
-                        isSelected: settings.mushafTheme == MushafTheme.night,
-                        onTap: () {
-                          if (isPremium) {
-                            settings.setMushafTheme(MushafTheme.night);
-                          } else {
-                            Navigator.pop(context);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -750,7 +651,8 @@ class _FullPageViewerState extends State<_FullPageViewer> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Align(
               alignment: Alignment.topCenter,
-              child: PageviewQuran(
+              child: settings.quranScript == QuranScript.mushaf
+                ? PageviewQuran(
                 initialPageNumber: _currentPage,
                 sp: 1.0,
                 h: 1.0,
@@ -797,6 +699,58 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                         );
                   }
                 },
+              )
+            : PageView.builder(
+                controller: _pageController,
+                reverse: true, // Quran is RTL
+                itemCount: settings.quranScript == QuranScript.tajweed ? 615 : 604,
+                onPageChanged: (index) {
+                  final page = index + 1;
+                  if (mounted) {
+                    setState(() => _currentPage = page);
+                  }
+                  widget.onPageChanged(page);
+
+                  // Update Last Read
+                  final currentSurah =
+                      context.read<QuranProvider>().currentSurah;
+                  if (currentSurah != null) {
+                    context.read<QuranProvider>().updateLastRead(
+                          currentSurah,
+                          pageNumber: page,
+                          scriptMode: settings.quranScript.name,
+                        );
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final uiPage = index + 1;
+                  final pageStr = TajweedMapping.getAssetPageString(uiPage);
+                  return InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    child: Image.asset(
+                      'assets/images/quran/page_$pageStr.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.image_not_supported_outlined,
+                                  size: 48, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Page $pageStr not found\nin assets/images/quran/',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -833,7 +787,7 @@ class _FullPageViewerState extends State<_FullPageViewer> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Page $_currentPage of 604',
+                      'Page $_currentPage of ${settings.quranScript == QuranScript.tajweed ? 615 : 604}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -1043,60 +997,4 @@ class _AyahCard extends StatelessWidget {
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  final String name;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
 
-  const _ThemeOption({
-    required this.name,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? AppTheme.primaryGreen : AppTheme.divider,
-                width: isSelected ? 3 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      )
-                    ]
-                  : null,
-            ),
-            child: isSelected
-                ? const Icon(Icons.check_rounded, color: AppTheme.primaryGreen)
-                : null,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

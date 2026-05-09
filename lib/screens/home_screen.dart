@@ -39,7 +39,7 @@ class HomeScreen extends StatelessWidget {
         slivers: [
           // ─── Collapsible Hero App Bar ────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 160,
+            expandedHeight: 170,
             floating: true,
             pinned: true,
             snap: false,
@@ -116,34 +116,28 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 80, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 70, 20, 16),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            'Assalamu Alaikum',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w500,
+                          Expanded(
+                            child: Text(
+                              'Assalamualaikum ${user?.isSheikh == true ? 'Sheikh ${user?.name}' : (user?.name ?? 'Izaan')}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.textPrimary,
+                                letterSpacing: -0.5,
+                              ),
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 14),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 20),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.isSheikh == true ? 'Sheikh ${user?.name}' : (user?.name ?? 'Student'),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
                       ),
                     ],
                   ),

@@ -7,7 +7,7 @@ import '../services/quran_api_service.dart';
 import '../services/quran_database_helper.dart';
 
 /// Standard Madani Mushaf starting pages for all 114 surahs.
-const Map<int, int> _surahStartPages = {
+const Map<int, int> surahStartPages = {
   1: 1, 2: 2, 3: 50, 4: 77, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 208,
   11: 221, 12: 235, 13: 249, 14: 255, 15: 262, 16: 267, 17: 282, 18: 293,
   19: 305, 20: 312, 21: 322, 22: 332, 23: 342, 24: 350, 25: 359, 26: 367,
@@ -207,6 +207,7 @@ class QuranProvider extends ChangeNotifier {
     int surahNumber, {
     String scriptEdition = 'quran-uthmani',
     String translationEdition = 'en.sahih',
+    bool preservePage = false,
   }) async {
     _isLoading = true;
     _error = null;
@@ -229,7 +230,7 @@ class QuranProvider extends ChangeNotifier {
         scriptEdition: scriptEdition,
         translationEdition: translationEdition,
       );
-      if (_currentAyahs.isNotEmpty) {
+      if (_currentAyahs.isNotEmpty && !preservePage) {
         _currentPage = _currentAyahs[0].pageNumber;
       }
     } catch (e) {
@@ -256,7 +257,7 @@ class QuranProvider extends ChangeNotifier {
   }
 
   void goToPage(int page) {
-    if (page < 1 || page > 604) return;
+    if (page < 1 || page > 624) return;
     if (_currentPage == page) return;
     _currentPage = page;
     notifyListeners();
@@ -264,7 +265,7 @@ class QuranProvider extends ChangeNotifier {
 
   /// Silently update the current page (without notification, used during scrolling)
   void setCurrentPage(int page) {
-    if (page < 1 || page > 604) return;
+    if (page < 1 || page > 624) return;
     if (_currentPage == page) return;
     _currentPage = page;
     // We don't notify here to avoid rebuild loops during scroll, 
@@ -284,8 +285,8 @@ class QuranProvider extends ChangeNotifier {
   }
 
   /// Navigate directly to a Surah's starting page in the Mushaf.
-  void goToSurah(int surahNumber) {
-    final page = _surahStartPages[surahNumber] ?? 1;
+  void goToSurah(int surahNumber, {int? tajweedPage}) {
+    final page = tajweedPage ?? surahStartPages[surahNumber] ?? 1;
     goToPage(page);
     // Also set current surah from the loaded surahs list
     try {

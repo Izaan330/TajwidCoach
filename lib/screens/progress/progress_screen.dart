@@ -13,6 +13,7 @@ import 'video_player_screen.dart';
 import '../../services/islamic_calendar_service.dart';
 import '../../providers/premium_provider.dart';
 import '../store/paywall_screen.dart';
+import 'family_leaderboard_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -375,8 +376,213 @@ class _StreakTab extends StatelessWidget {
             isPremium: context.watch<PremiumProvider>().isPremium,
           ),
           const SizedBox(height: 32),
+
+          // Family Leaderboard Section
+          _SectionHeader(
+            title: 'Family Leaderboard',
+            icon: Icons.family_restroom_rounded,
+            iconColor: AppTheme.primaryGreen,
+            onActionTap: () {
+              final premium = context.read<PremiumProvider>();
+              if (premium.tier != PremiumTier.family) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                );
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const FamilyLeaderboardScreen()),
+                );
+              }
+            },
+            action: 'View All',
+          ),
+          const SizedBox(height: 12),
+          _FamilyLeaderboardPreview(premium: context.watch<PremiumProvider>()),
+          const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final String action;
+  final VoidCallback onActionTap;
+
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.action,
+    required this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 24),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed: onActionTap,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            action,
+            style: GoogleFonts.plusJakartaSans(
+              color: AppTheme.primaryGreen,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FamilyLeaderboardPreview extends StatelessWidget {
+  final PremiumProvider premium;
+  const _FamilyLeaderboardPreview({required this.premium});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFamily = premium.tier == PremiumTier.family;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.cardWhite,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isFamily
+              ? AppTheme.primaryGreen.withValues(alpha: 0.2)
+              : AppTheme.divider,
+        ),
+      ),
+      child: Column(
+        children: [
+          if (!isFamily)
+            Column(
+              children: [
+                Icon(Icons.lock_rounded,
+                    color: AppTheme.textHint.withValues(alpha: 0.5), size: 32),
+                const SizedBox(height: 12),
+                Text(
+                  'Exclusive to Family Plan',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Compete with up to 3 family members and stay motivated together!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Upgrade to Family'),
+                ),
+              ],
+            )
+          else if (premium.familyMemberUids.isEmpty)
+            const Column(
+              children: [
+                Icon(Icons.group_add_rounded,
+                    color: AppTheme.primaryGreen, size: 32),
+                SizedBox(height: 12),
+                Text(
+                  'Family Plan Active',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Invite family members to see their progress here!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            )
+          else
+            const Column(
+              children: [
+                // Minimal preview of the leaderboard
+                _PreviewItem(name: 'You', rank: 1, xp: 1200),
+                Divider(height: 20),
+                _PreviewItem(name: 'Member 1', rank: 2, xp: 950),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewItem extends StatelessWidget {
+  final String name;
+  final int rank;
+  final int xp;
+
+  const _PreviewItem({required this.name, required this.rank, required this.xp});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 14,
+          backgroundColor:
+              rank == 1 ? AppTheme.accentAmber : AppTheme.backgroundCream,
+          child: Text('$rank',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(width: 12),
+        Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const Spacer(),
+        Text('$xp XP',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+      ],
     );
   }
 }
@@ -557,28 +763,36 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
             ),
           ),
           const SizedBox(height: 32),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Less',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textHint)),
-              const SizedBox(width: 10),
-              _legendBox(const Color(0xFFF1F3F4)),
-              _legendBox(const Color(0xFFA7FFEB)),
-              _legendBox(const Color(0xFF1DE9B6)),
-              _legendBox(const Color(0xFF00BFA5)),
-              const SizedBox(width: 10),
-              Text('More',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textHint)),
-              const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Less',
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textHint)),
+                  const SizedBox(width: 8),
+                  _legendBox(const Color(0xFFF1F3F4)),
+                  _legendBox(const Color(0xFFA7FFEB)),
+                  _legendBox(const Color(0xFF1DE9B6)),
+                  _legendBox(const Color(0xFF00BFA5)),
+                  const SizedBox(width: 8),
+                  Text('More',
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textHint)),
+                ],
+              ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.backgroundCream,
                   borderRadius: BorderRadius.circular(12),
@@ -587,14 +801,16 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.calendar_today_rounded,
-                        size: 12, color: AppTheme.primaryGreen),
+                        size: 11, color: AppTheme.primaryGreen),
                     const SizedBox(width: 6),
-                    Text(
-                      '${widget.heatmapData.length} days active',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryGreen,
+                    Flexible(
+                      child: Text(
+                        '${widget.heatmapData.length} days active',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGreen,
+                        ),
                       ),
                     ),
                   ],
@@ -1264,25 +1480,26 @@ class _BadgesTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: earned
-                        ? AppTheme.primaryGreen.withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${badge.requiredDays} DAYS',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9,
-                      color: earned ? AppTheme.primaryGreen : AppTheme.textHint,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
+                if (badge.requiredDays > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: earned
+                          ? AppTheme.primaryGreen.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${badge.requiredDays} DAYS',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 9,
+                        color: earned ? AppTheme.primaryGreen : AppTheme.textHint,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 6),
                 Expanded(
                   child: Text(

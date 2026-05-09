@@ -13,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  bool _isAuthDetermined = false;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
@@ -20,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _user != null;
   bool get isPremium => _user?.isPremium ?? false;
   bool get isSheikh => _user?.isSheikh ?? false;
+  bool get isAuthDetermined => _isAuthDetermined;
 
   StreamSubscription<DocumentSnapshot>? _userSubscription;
 
@@ -35,7 +37,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _initGuest() {
-    _user = null;
+    _user = const UserModel(
+      uid: 'guest_user',
+      name: 'Izaan',
+      phone: '',
+    );
+    _isAuthDetermined = true;
+    notifyListeners();
   }
 
   void _init() {
@@ -43,6 +51,7 @@ class AuthProvider extends ChangeNotifier {
       _userSubscription?.cancel();
       if (user == null) {
         _user = null;
+        _isAuthDetermined = true;
         notifyListeners();
       } else {
         _listenToUserDetails(user.uid);
@@ -57,12 +66,15 @@ class AuthProvider extends ChangeNotifier {
       } else {
         // Only set default if we don't have a user already (prevent overwriting local updates)
         if (_user == null || _user?.name == 'Student' || _user?.name == 'Guest Student') {
-          _user = UserModel(uid: uid, name: 'Student', phone: '');
+          _user = UserModel(uid: uid, name: 'Izaan', phone: '');
         }
       }
+      _isAuthDetermined = true;
       notifyListeners();
     }, onError: (e) {
       debugPrint('Error listening to user details: $e');
+      _isAuthDetermined = true;
+      notifyListeners();
     });
   }
 
@@ -92,7 +104,14 @@ class AuthProvider extends ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       _error = e.message;
     } catch (e) {
-      _error = 'Sign in failed: $e';
+      // Handle known Pigeon casting issue in some Firebase Auth versions.
+      // If authStateChanges has already updated the user, we can ignore this result-decoding error.
+      if (e.toString().contains('PigeonUserDetails') && _auth?.currentUser != null) {
+        debugPrint('AuthProvider: Suppressing PigeonUserDetails cast error as user is authenticated.');
+        _error = null;
+      } else {
+        _error = 'Sign in failed: $e';
+      }
     } finally {
       _setLoading(false);
     }
@@ -127,7 +146,13 @@ class AuthProvider extends ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       _error = e.message;
     } catch (e) {
-      _error = 'Account creation failed: $e';
+      // Handle known Pigeon casting issue in some Firebase Auth versions.
+      if (e.toString().contains('PigeonUserDetails') && _auth?.currentUser != null) {
+        debugPrint('AuthProvider: Suppressing PigeonUserDetails cast error during sign up.');
+        _error = null;
+      } else {
+        _error = 'Account creation failed: $e';
+      }
     } finally {
       _setLoading(false);
     }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/premium_provider.dart';
 import '../../theme/app_theme.dart';
+import '../settings/terms_of_use_screen.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -288,7 +289,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ),
                           const Text(' • ', style: TextStyle(color: AppTheme.textHint)),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const TermsOfUseScreen()),
+                            ),
                             child: const Text('Terms of Use',
                                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
                           ),
