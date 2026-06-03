@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import '../models/sheikh_model.dart';
 import '../models/ijazah_model.dart';
 import 'package:intl/intl.dart';
 

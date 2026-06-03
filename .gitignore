@@ -47,3 +47,9 @@ android/build/
 ios/Pods/
 *.log
 .DS_Store
+
+# Python virtual environments
+.venv*/
+venv*/
+server/.venv_mac/
+

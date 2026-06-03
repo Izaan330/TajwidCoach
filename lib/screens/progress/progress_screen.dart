@@ -362,6 +362,13 @@ class _StreakTab extends StatelessWidget {
             ),
           const SizedBox(height: 24),
 
+          _WeeklyActivityRing(
+            daysThisWeek: _calculateDaysThisWeek(streak.heatmapData),
+          ),
+          const SizedBox(height: 24),
+          _QuickStatsRow(streak: streak),
+          const SizedBox(height: 32),
+
           // Heatmap Calendar
           const Align(
             alignment: Alignment.centerLeft,
@@ -403,6 +410,19 @@ class _StreakTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  int _calculateDaysThisWeek(Map<String, int> heatmapData) {
+    int days = 0;
+    final today = DateTime.now();
+    for (int i = 0; i < 7; i++) {
+      final d = today.subtract(Duration(days: i));
+      final ds = "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+      if (heatmapData[ds] != null && heatmapData[ds]! > 0) {
+        days++;
+      }
+    }
+    return days;
   }
 }
 
@@ -1381,6 +1401,164 @@ class _MasteryCard extends StatelessWidget {
   }
 }
 
+// --- NEW GAMIFICATION WIDGETS ---
+
+class _WeeklyActivityRing extends StatelessWidget {
+  final int daysThisWeek;
+
+  const _WeeklyActivityRing({required this.daysThisWeek});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: 120,
+          height: 120,
+          child: CustomPaint(
+            painter: _ActivityRingPainter(daysThisWeek: daysThisWeek),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$daysThisWeek/7',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'DAYS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'This Week',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityRingPainter extends CustomPainter {
+  final int daysThisWeek;
+  _ActivityRingPainter({required this.daysThisWeek});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 8;
+
+    // Background track
+    final bgPaint = Paint()
+      ..color = AppTheme.divider
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    // Foreground progress
+    if (daysThisWeek > 0) {
+      final fgPaint = Paint()
+        ..color = AppTheme.primaryGreen
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round;
+
+      final rect = Rect.fromCircle(center: center, radius: radius);
+      final sweepAngle = (daysThisWeek / 7) * 2 * 3.141592653589793;
+      canvas.drawArc(rect, -3.141592653589793 / 2, sweepAngle, false, fgPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _QuickStatsRow extends StatelessWidget {
+  final StreakProvider streak;
+  
+  const _QuickStatsRow({required this.streak});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalMinutes = streak.heatmapData.values.fold(0, (a, b) => a + b);
+    final totalVerses = totalMinutes * 3;
+    final totalXp = context.watch<TajwidProgressProvider>().totalMasteryScore * 100;
+
+    return Row(
+      children: [
+        Expanded(child: _buildStatCard(Icons.menu_book_rounded, totalVerses, 'Verses')),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatCard(Icons.schedule_rounded, totalMinutes, 'Minutes')),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatCard(Icons.auto_awesome_rounded, totalXp, 'XP')),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(IconData icon, int target, String label) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppTheme.primaryGreen, size: 24),
+          const SizedBox(height: 8),
+          _AnimatedStatCounter(targetValue: target),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimatedStatCounter extends StatelessWidget {
+  final int targetValue;
+  const _AnimatedStatCounter({required this.targetValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: targetValue.toDouble()),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, value, child) {
+        return Text(
+          value.toInt().toString(),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        );
+      },
+    );
+  }
+}
+
 // --- BADGES TAB ---
 class _BadgesTab extends StatelessWidget {
   final List<String> earnedBadges;
@@ -1389,135 +1567,122 @@ class _BadgesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final premium = context.watch<PremiumProvider>();
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.5,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: StreakService.allBadges.length,
-      itemBuilder: (context, index) {
-        final badge = StreakService.allBadges[index];
-        bool earned = earnedBadges.contains(badge.id);
-        
-        // Handle premium-only badges
-        if (badge.isPremiumOnly) {
-          if (badge.id == 'khadim' && premium.isPremium) earned = true;
-          if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) earned = true;
-        }
-        return Container(
-          decoration: BoxDecoration(
-            color: earned
-                ? AppTheme.primaryGreen.withValues(alpha: 0.08)
-                : AppTheme.cardWhite,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: earned
-                  ? AppTheme.primaryGreen.withValues(alpha: 0.2)
-                  : AppTheme.divider.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            boxShadow: earned
-                ? [
-                    BoxShadow(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    )
-                  ]
-                : null,
+    final int earnedCount = StreakService.allBadges.where((badge) {
+      if (earnedBadges.contains(badge.id)) return true;
+      if (badge.id == 'khadim' && premium.isPremium) return true;
+      if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) return true;
+      return false;
+    }).length;
+
+    return Column(
+      children: [
+        // Header Row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Row(
+            children: [
+              Text(
+                '$earnedCount / ${StreakService.allBadges.length} Earned',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: earnedCount / StreakService.allBadges.length,
+                    backgroundColor: AppTheme.divider,
+                    valueColor: const AlwaysStoppedAnimation(AppTheme.primaryGreen),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: earned
-                        ? Colors.white
-                        : AppTheme.divider.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        badge.icon,
-                        size: 40,
-                        color: earned
-                            ? AppTheme.accentAmber
-                            : Colors.grey.withValues(alpha: 0.3),
-                      ),
-                      if (!earned)
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.lock_rounded,
-                              size: 16, color: AppTheme.textHint),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  badge.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    color: earned ? AppTheme.textPrimary : AppTheme.textHint,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (badge.requiredDays > 0)
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(20),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.85,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: StreakService.allBadges.length,
+            itemBuilder: (context, index) {
+              final badge = StreakService.allBadges[index];
+              bool earned = earnedBadges.contains(badge.id);
+              
+              if (badge.isPremiumOnly) {
+                if (badge.id == 'khadim' && premium.isPremium) earned = true;
+                if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) earned = true;
+              }
+
+              return Column(
+                children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
-                      color: earned
-                          ? AppTheme.primaryGreen.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
+                      shape: BoxShape.circle,
+                      color: earned ? null : const Color(0xFF2C2C2E),
+                      gradient: earned ? const LinearGradient(
+                        colors: [Color(0xFFFFD700), Color(0xFFF59E0B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ) : null,
+                      boxShadow: earned ? [
+                        BoxShadow(
+                          color: AppTheme.accentAmber.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        )
+                      ] : null,
                     ),
-                    child: Text(
-                      '${badge.requiredDays} DAYS',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 9,
-                        color: earned ? AppTheme.primaryGreen : AppTheme.textHint,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          badge.icon,
+                          size: 32,
+                          color: earned ? Colors.black : Colors.white.withValues(alpha: 0.4),
+                        ),
+                        if (!earned)
+                          Positioned(
+                            bottom: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black87,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.lock_rounded, size: 12, color: Colors.white70),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    badge.description,
+                  const SizedBox(height: 8),
+                  Text(
+                    badge.name,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                      height: 1.2,
-                      fontWeight: FontWeight.w600,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: earned ? Colors.white : AppTheme.textHint,
+                      height: 1.1,
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

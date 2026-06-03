@@ -123,6 +123,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void _loadSurah() {
     final settings = context.read<SettingsProvider>();
     final quranProvider = context.read<QuranProvider>();
+
+    // Contextual guard: if a non-premium user has a premium script active
+    // (e.g. from a restored backup or downgrade race condition), silently
+    // reset to the free Indo-Pak script before any loading occurs.
+    final isPremium = context.read<PremiumProvider>().isPremium;
+    if (!isPremium && settings.quranScript != QuranScript.indoPak) {
+      settings.setQuranScript(QuranScript.indoPak);
+    }
+
     // Navigate to this surah's starting page or resumed page
     if (widget.initialPage != null) {
       quranProvider.goToPage(widget.initialPage!);
@@ -151,6 +160,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       preservePage: settings.quranScript == QuranScript.tajweed,
     );
   }
+
 
   @override
   void dispose() {

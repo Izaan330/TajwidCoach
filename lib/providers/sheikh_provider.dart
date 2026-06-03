@@ -10,7 +10,7 @@ import '../models/ijazah_model.dart';
 
 class SheikhProvider extends ChangeNotifier {
   final RecordingService _service = RecordingService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore? _firestore;
 
   List<SheikhModel> _availableSheikhs = [];
   List<RecordingModel> _pendingReviews = [];
@@ -36,15 +36,26 @@ class SheikhProvider extends ChangeNotifier {
     return (sheikh.students.length) < 10; // Basic limit is 10 students
   }
 
-  SheikhProvider() {
+  SheikhProvider() : _firestore = _tryGetFirestore() {
     _fetchAvailableSheikhs();
+  }
+
+  static FirebaseFirestore? _tryGetFirestore() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _fetchAvailableSheikhs() async {
     _isLoading = true;
     notifyListeners();
     try {
-      final snapshot = await _firestore
+      if (_firestore == null) {
+        _availableSheikhs = _getMockSheikhs();
+      } else {
+      final snapshot = await _firestore!
           .collection('sheikhs')
           .where('isVerified', isEqualTo: true)
           .get();
@@ -56,6 +67,7 @@ class SheikhProvider extends ChangeNotifier {
       } else {
         // Mock data for testing when Firestore is empty
         _availableSheikhs = _getMockSheikhs();
+      }
       }
     } catch (e) {
       debugPrint('Error fetching sheikhs: $e');
@@ -126,7 +138,8 @@ class SheikhProvider extends ChangeNotifier {
 
   void _listenToCurrentSheikh(String sheikhId) {
     _currentSheikhSubscription?.cancel();
-    _currentSheikhSubscription = _firestore
+    if (_firestore == null) return;
+    _currentSheikhSubscription = _firestore!
         .collection('sheikhs')
         .doc(sheikhId)
         .snapshots()
@@ -172,8 +185,9 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   Future<void> _fetchStudentProfile(String uid) async {
+    if (_firestore == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore!.collection('users').doc(uid).get();
       if (doc.exists) {
         _studentProfiles[uid] = UserModel.fromMap(doc.data()!);
         notifyListeners();
@@ -202,7 +216,8 @@ class SheikhProvider extends ChangeNotifier {
     }
 
     try {
-      await _firestore.collection('sheikhs').doc(sheikhId).update({
+      if (_firestore == null) return;
+      await _firestore!.collection('sheikhs').doc(sheikhId).update({
         'isAvailable': isAvailable,
       });
       
@@ -232,7 +247,8 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   Stream<List<IjazahCertificate>> getStudentCertificates(String userId) {
-    return _firestore
+    if (_firestore == null) return const Stream.empty();
+    return _firestore!
         .collection('certificates')
         .where('studentId', isEqualTo: userId)
         .snapshots()
@@ -242,8 +258,9 @@ class SheikhProvider extends ChangeNotifier {
   }
 
   Future<void> enrollWithSheikh(String userId, String sheikhId) async {
+    if (_firestore == null) throw Exception('Firebase not available');
     // Fetch latest sheikh data to check capacity
-    final doc = await _firestore.collection('sheikhs').doc(sheikhId).get();
+    final doc = await _firestore!.collection('sheikhs').doc(sheikhId).get();
     if (!doc.exists) throw Exception('Sheikh not found');
     
     final sheikh = SheikhModel.fromMap(doc.data()!);
@@ -252,18 +269,19 @@ class SheikhProvider extends ChangeNotifier {
     }
 
     // 1. Update user's sheikhId
-    await _firestore.collection('users').doc(userId).update({'sheikhId': sheikhId});
+    await _firestore!.collection('users').doc(userId).update({'sheikhId': sheikhId});
     
     // 2. Add student to sheikh's list
-    await _firestore.collection('sheikhs').doc(sheikhId).update({
+    await _firestore!.collection('sheikhs').doc(sheikhId).update({
       'students': FieldValue.arrayUnion([userId]),
       'currentStudents': FieldValue.increment(1),
     });
   }
 
   Future<void> submitIjazah(IjazahCertificate certificate) async {
+    if (_firestore == null) return;
     // 1. Save certificate
-    await _firestore.collection('certificates').doc(certificate.id).set({
+    await _firestore!.collection('certificates').doc(certificate.id).set({
       'studentId': certificate.studentId,
       'studentName': certificate.studentName,
       'sheikhId': certificate.sheikhId,
@@ -275,7 +293,7 @@ class SheikhProvider extends ChangeNotifier {
     });
 
     // 2. Award badge to student
-    await _firestore.collection('users').doc(certificate.studentId).update({
+    await _firestore!.collection('users').doc(certificate.studentId).update({
       'badges': FieldValue.arrayUnion(['ijazah_${certificate.attestation.toLowerCase().replaceAll(' ', '_')}']),
     });
   }

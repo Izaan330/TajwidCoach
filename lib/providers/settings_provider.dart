@@ -120,7 +120,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final scriptIndex = prefs.getInt(_scriptKey) ?? 0;
+    final scriptIndex = prefs.getInt(_scriptKey) ?? QuranScript.indoPak.index;
     final translationIndex = prefs.getInt(_translationKey) ?? 0;
     _quranFontSize = prefs.getDouble(_fontSizeKey) ?? 28.0;
     _showTranslation = prefs.getBool(_showTranslationKey) ?? true;

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/revenue_cat_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +84,9 @@ class PremiumProvider extends ChangeNotifier {
       try {
         if (RevenueCatService.isConfigured) {
           await RevenueCatService.logOut();
+        } else {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('mock_plan_id');
         }
       } catch (e) {
         debugPrint('RevenueCat logout error: $e');
@@ -106,6 +110,20 @@ class PremiumProvider extends ChangeNotifier {
         final customerInfo = await RevenueCatService.getCustomerInfo();
         if (customerInfo != null) {
           _updateFromCustomerInfo(customerInfo);
+        }
+      } else {
+        // Load mockPlanId from Firestore in development/mock mode
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          final mockPlanId = data['mockPlanId'];
+          if (mockPlanId != null) {
+            _currentPlanId = mockPlanId;
+            _tier = _tierFromPlanId(mockPlanId);
+            
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('mock_plan_id', mockPlanId);
+          }
         }
       }
       
@@ -328,6 +346,20 @@ class PremiumProvider extends ChangeNotifier {
     if (RevenueCatService.isConfigured) {
       await RevenueCatService.init();
       _checkStatus();
+    } else {
+      await _loadLocalMockStatus();
+    }
+  }
+
+  Future<void> _loadLocalMockStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localPlanId = prefs.getString('mock_plan_id') ?? 'free';
+      _currentPlanId = localPlanId;
+      _tier = _tierFromPlanId(localPlanId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading local mock status: $e');
     }
   }
 
@@ -341,9 +373,9 @@ class PremiumProvider extends ChangeNotifier {
   }
 
   void _updateFromCustomerInfo(CustomerInfo customerInfo) {
-    final entitlement = customerInfo.entitlements.all["premium"];
+    final entitlement = customerInfo.entitlements.all["Tajwid Coach Pro"];
     if (entitlement?.isActive == true) {
-      _currentPlanId = entitlement?.productIdentifier ?? 'premium_yearly';
+      _currentPlanId = entitlement?.productIdentifier ?? 'yearly';
       _tier = _tierFromPlanId(_currentPlanId);
     } else {
       _tier = PremiumTier.free;
@@ -354,13 +386,14 @@ class PremiumProvider extends ChangeNotifier {
 
   PremiumTier _tierFromPlanId(String planId) {
     switch (planId) {
-      case 'premium_yearly':
+      case 'yearly':
+      case 'monthly':
         return PremiumTier.premium;
       case 'family_yearly':
         return PremiumTier.family;
       case 'lifetime':
         return PremiumTier.lifetime;
-      case 'sheikh_pro':
+      case 'monthly_2':
         return PremiumTier.sheikhPro;
       default:
         return PremiumTier.premium;
@@ -371,7 +404,7 @@ class PremiumProvider extends ChangeNotifier {
 
   static const List<PremiumPlan> plans = [
     PremiumPlan(
-      id: 'premium_yearly',
+      id: 'yearly',
       name: 'Premium',
       price: '₹199',
       period: '/year',
@@ -423,7 +456,7 @@ class PremiumProvider extends ChangeNotifier {
       ],
     ),
     PremiumPlan(
-      id: 'sheikh_pro',
+      id: 'monthly_2',
       name: 'Sheikh Pro',
       price: '₹999',
       period: '/month',
@@ -458,6 +491,16 @@ class PremiumProvider extends ChangeNotifier {
         if (_tier == PremiumTier.premium || _tier == PremiumTier.family || _tier == PremiumTier.lifetime) {
           _sheikhCredits += 100; // ₹100 initial credit
         }
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mock_plan_id', planId);
+
+        if (_userId != null) {
+          await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+            'mockPlanId': planId,
+            'sheikhCredits': _sheikhCredits,
+          }, SetOptions(merge: true));
+        }
       } else {
         final customerInfo = await RevenueCatService.purchasePlan(planId);
         if (customerInfo != null) {
@@ -470,6 +513,15 @@ class PremiumProvider extends ChangeNotifier {
       if (!RevenueCatService.isConfigured) {
         _currentPlanId = planId;
         _tier = _tierFromPlanId(planId);
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mock_plan_id', planId);
+
+        if (_userId != null) {
+          await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+            'mockPlanId': planId,
+          }, SetOptions(merge: true));
+        }
       }
     }
 
@@ -490,6 +542,23 @@ class PremiumProvider extends ChangeNotifier {
       } else {
         await Future.delayed(const Duration(seconds: 1));
         debugPrint('RevenueCat: Mock restore successful');
+
+        if (_userId != null) {
+          final userDoc = await FirebaseFirestore.instance.collection('users').doc(_userId).get();
+          if (userDoc.exists) {
+            final mockPlanId = userDoc.data()?['mockPlanId'] ?? 'yearly';
+            _currentPlanId = mockPlanId;
+            _tier = _tierFromPlanId(mockPlanId);
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('mock_plan_id', mockPlanId);
+          }
+        } else {
+          _currentPlanId = 'yearly';
+          _tier = PremiumTier.premium;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mock_plan_id', 'yearly');
+        }
       }
     } catch (e) {
       debugPrint('Restore error: $e');

@@ -37,12 +37,10 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundMid,
       body: CustomScrollView(
         slivers: [
-          // ─── Collapsible Hero App Bar ────────────────────────────────────
+          // ─── Clean Compact Pinned App Bar ─────────────────────────────────
           SliverAppBar(
-            expandedHeight: 170,
             floating: true,
             pinned: true,
-            snap: false,
             backgroundColor: AppTheme.backgroundMid,
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -102,57 +100,35 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0D1628),
-                      Color(0xFF0A1E14),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 70, 20, 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Assalamualaikum ${user?.isSheikh == true ? 'Sheikh ${user?.name}' : (user?.name ?? 'Izaan')}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.textPrimary,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 20),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ),
 
           // ─── Main Content ─────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Greeting immediately under the top app bar
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Assalamualaikum ${user?.isSheikh == true ? 'Sheikh ${user?.name}' : (user?.name ?? 'Izaan')}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.dark_mode_rounded, color: AppTheme.accentAmber, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 18), // Crisp spacing before the Daily Challenge card
                   // Daily Challenge
                   if (dailySurah != null)
                     _DailyChallengeCard(
@@ -321,7 +297,7 @@ class _DailyChallengeCardState extends State<_DailyChallengeCard>
         builder: (context, child) {
           final glowAlpha = 0.25 + 0.2 * _glowController.value;
           return Container(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF004D2C), Color(0xFF00251A)],
@@ -826,7 +802,7 @@ class _ResumeReadingCard extends StatelessWidget {
         if (lastRead.scriptMode != null) {
           final mode = QuranScript.values.firstWhere(
             (m) => m.name == lastRead.scriptMode,
-            orElse: () => QuranScript.mushaf,
+            orElse: () => QuranScript.indoPak,
           );
           await settings.setQuranScript(mode);
         }

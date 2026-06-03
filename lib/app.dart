@@ -80,6 +80,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final premium = context.watch<PremiumProvider>();
     final user = auth.user;
     final uid = user?.uid;
+
+    // Global guard: enforce free script for non-premium users on startup,
+    // login, and any premium tier change (e.g. downgrade / expiry).
+    final settings = context.read<SettingsProvider>();
+    if (!premium.isPremium && settings.quranScript != QuranScript.indoPak) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) settings.setQuranScript(QuranScript.indoPak);
+      });
+    }
     
     if (uid != _lastUid) {
       _lastUid = uid;

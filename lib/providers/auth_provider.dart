@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/sheikh_model.dart';
 
@@ -13,6 +15,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  String? _tempPhoneNumber;
   bool _isAuthDetermined = false;
 
   UserModel? get user => _user;
@@ -92,13 +95,19 @@ class AuthProvider extends ChangeNotifier {
         await _auth!.signInWithEmailAndPassword(email: email, password: password);
       } else {
         await Future.delayed(const Duration(seconds: 1));
-        _user = const UserModel(
-          uid: 'guest_user_123',
-          name: 'Guest Student',
-          email: 'guest@example.com',
-          phone: '',
-          premiumStatus: 'premium',
-        );
+        final prefs = await SharedPreferences.getInstance();
+        final savedJson = prefs.getString('mock_user_email_$email');
+        if (savedJson != null) {
+          _user = UserModel.fromMap(jsonDecode(savedJson));
+        } else {
+          _user = UserModel(
+            uid: 'guest_user_123',
+            name: 'Guest Student',
+            email: email,
+            phone: '',
+            premiumStatus: 'premium',
+          );
+        }
       }
       _error = null;
     } on FirebaseAuthException catch (e) {
@@ -161,8 +170,12 @@ class AuthProvider extends ChangeNotifier {
   String? _verificationId;
 
   Future<void> signOut() async {
-    if (isFirebaseAvailable && _auth != null) {
-      await _auth!.signOut();
+    try {
+      if (isFirebaseAvailable && _auth != null) {
+        await _auth!.signOut();
+      }
+    } catch (e) {
+      debugPrint('Error signing out of Firebase: $e');
     }
     _user = null;
     notifyListeners();
@@ -171,8 +184,12 @@ class AuthProvider extends ChangeNotifier {
   Future<void> verifyPhoneNumber(String phoneNumber) async {
     _setLoading(true);
     _error = null;
+    _tempPhoneNumber = phoneNumber;
     try {
       if (isFirebaseAvailable && _auth != null) {
+        if (!kReleaseMode) {
+          await _auth!.setSettings(appVerificationDisabledForTesting: true);
+        }
         await _auth!.verifyPhoneNumber(
           phoneNumber: phoneNumber,
           verificationCompleted: (PhoneAuthCredential credential) async {
@@ -212,11 +229,18 @@ class AuthProvider extends ChangeNotifier {
         await _auth!.signInWithCredential(credential);
       } else if (_verificationId == 'mock_verification_id') {
         await Future.delayed(const Duration(seconds: 1));
-        _user = const UserModel(
-          uid: 'mock_user_id',
-          name: 'Mock User',
-          phone: '+1234567890',
-        );
+        final phone = _tempPhoneNumber ?? '+1234567890';
+        final prefs = await SharedPreferences.getInstance();
+        final savedJson = prefs.getString('mock_user_phone_$phone');
+        if (savedJson != null) {
+          _user = UserModel.fromMap(jsonDecode(savedJson));
+        } else {
+          _user = UserModel(
+            uid: 'mock_user_id',
+            name: 'Mock User',
+            phone: phone,
+          );
+        }
       } else {
         _error = 'Verification session expired. Please try again.';
       }
@@ -300,6 +324,20 @@ class AuthProvider extends ChangeNotifier {
         masjid: sheikhData.masjid,
         city: sheikhData.city,
       );
+
+      // Persist mock sheikh profile in SharedPreferences for guest mode
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (_user!.phone.isNotEmpty) {
+          await prefs.setString('mock_user_phone_${_user!.phone}', jsonEncode(_user!.toMap()));
+        }
+        if (_user!.email != null && _user!.email!.isNotEmpty) {
+          await prefs.setString('mock_user_email_${_user!.email}', jsonEncode(_user!.toMap()));
+        }
+      } catch (e) {
+        debugPrint('Error saving mock sheikh to prefs: $e');
+      }
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error upgrading to sheikh: $e');

@@ -118,12 +118,18 @@ class StreakService {
   ];
 
   final SharedPreferences _prefs;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore? _firestore;
   String? _userId;
   bool isUnlimited = false;
   int maxFreezes = 2;
 
-  StreakService(this._prefs);
+  StreakService(this._prefs) {
+    try {
+      _firestore = FirebaseFirestore.instance;
+    } catch (_) {
+      _firestore = null;
+    }
+  }
 
   set userId(String? uid) {
     if (_userId != uid) {
@@ -182,7 +188,7 @@ class StreakService {
     } else {
       await _setStreakFreezes(current + count);
     }
-    if (_userId != null) await syncToFirestore();
+    if (_userId != null) syncToFirestore();
   }
 
   Future<bool> useManualFreeze() async {
@@ -207,7 +213,7 @@ class StreakService {
       await _setStreakFreezes(streakFreezes - 1);
     }
     
-    if (_userId != null) await syncToFirestore();
+    if (_userId != null) syncToFirestore();
     return true;
   }
 
@@ -277,7 +283,7 @@ class StreakService {
     
     // Sync to cloud
     if (_userId != null) {
-      await syncToFirestore();
+      syncToFirestore();
     }
     
     return badge;
@@ -316,14 +322,14 @@ class StreakService {
     await _prefs.setString('heatmap_data', encoded);
     
     if (_userId != null) {
-      await syncToFirestore();
+      syncToFirestore();
     }
   }
 
   Future<void> syncToFirestore() async {
-    if (_userId == null) return;
+    if (_userId == null || _firestore == null) return;
     try {
-      await _firestore.collection('users').doc(_userId).collection('progress').doc('streak').set({
+      await _firestore!.collection('users').doc(_userId).collection('progress').doc('streak').set({
         'currentStreak': currentStreak,
         'longestStreak': longestStreak,
         'lastPracticeDate': lastPracticeDate,
@@ -339,9 +345,9 @@ class StreakService {
   }
 
   Future<void> syncFromFirestore() async {
-    if (_userId == null) return;
+    if (_userId == null || _firestore == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(_userId).collection('progress').doc('streak').get();
+      final doc = await _firestore!.collection('users').doc(_userId).collection('progress').doc('streak').get();
       if (doc.exists) {
         final data = doc.data()!;
         await _prefs.setInt('streak_days', data['currentStreak'] ?? 0);

@@ -2,11 +2,18 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 class FirebaseMessagingService {
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging? _fcm;
+
+  FirebaseMessagingService() {
+    try {
+      _fcm = FirebaseMessaging.instance;
+    } catch (_) {}
+  }
 
   Future<void> init() async {
+    if (_fcm == null) return;
     // Request permission (iOS/Android 13+)
-    NotificationSettings settings = await _fcm.requestPermission(
+    NotificationSettings settings = await _fcm!.requestPermission(
       alert: true,
       announcement: false,
       badge: true,
@@ -25,7 +32,7 @@ class FirebaseMessagingService {
     }
 
     // Get FCM Token
-    String? token = await _fcm.getToken();
+    String? token = await _fcm!.getToken();
     debugPrint('FCM Token: $token');
 
     // Handle background messages

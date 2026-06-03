@@ -1,13 +1,24 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 class RevenueCatService {
-  // Replace these with your actual keys from the RevenueCat dashboard
-  static const _appleApiKey = 'appl_api_key_here';
-  static const _googleApiKey = 'goog_api_key_here';
+  // Replace these with your actual keys from the RevenueCat dashboard.
+  // Standard public SDK keys from RevenueCat typically start with 'appl_' and 'goog_'.
+  static const _appleApiKey = 'test_cVlsLjKsUBKNirqTCiiRGySsiGs';
+  static const _googleApiKey = 'goog_gKFpeWooMyawuXRMVpTSfuPBDuV';
 
-  static bool get isConfigured => _appleApiKey != 'appl_api_key_here' && _googleApiKey != 'goog_api_key_here';
+  /// Returns true only if valid API keys have been provided.
+  /// Bypasses initialization and triggers local high-fidelity mock subscriptions in development
+  /// if placeholder or 'test_' keys are present.
+  static bool get isConfigured =>
+      _appleApiKey.isNotEmpty &&
+      _appleApiKey != 'appl_api_key_here' &&
+      !_appleApiKey.startsWith('test_') &&
+      _googleApiKey.isNotEmpty &&
+      _googleApiKey != 'goog_api_key_here' &&
+      !_googleApiKey.startsWith('test_');
 
   static Future<void> init() async {
     if (kIsWeb) return;
@@ -59,12 +70,14 @@ class RevenueCatService {
           (pkg) => pkg.storeProduct.identifier == planId,
           orElse: () => offerings.current!.availablePackages.first,
         );
-        final result = await Purchases.purchase(PurchaseParams.package(package));
+        final result =
+            await Purchases.purchase(PurchaseParams.package(package));
         return result.customerInfo;
       } else {
         final products = await Purchases.getProducts([planId]);
         if (products.isNotEmpty) {
-          final result = await Purchases.purchase(PurchaseParams.storeProduct(products.first));
+          final result = await Purchases.purchase(
+              PurchaseParams.storeProduct(products.first));
           return result.customerInfo;
         }
       }
@@ -81,6 +94,14 @@ class RevenueCatService {
     } catch (e) {
       debugPrint('RevenueCat: Restore error: $e');
       rethrow;
+    }
+  }
+
+  static Future<void> presentCustomerCenter() async {
+    try {
+      await RevenueCatUI.presentCustomerCenter();
+    } catch (e) {
+      debugPrint('RevenueCat: Error presenting customer center: $e');
     }
   }
 }

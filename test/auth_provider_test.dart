@@ -1,18 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tajwid_coach/providers/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('AuthProvider Verification', () {
     late AuthProvider authProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       // Initialize in Guest/Mock mode (isFirebaseAvailable: false)
       authProvider = AuthProvider(isFirebaseAvailable: false);
     });
 
-    test('Initial state is unauthenticated', () {
-      expect(authProvider.isAuthenticated, false);
-      expect(authProvider.user, null);
+    test('Initial state in guest mode is authenticated as guest user', () {
+      expect(authProvider.isAuthenticated, true);
+      expect(authProvider.user?.uid, 'guest_user');
     });
 
     test('Sign Up (Mock) sets user correctly', () async {

@@ -12,10 +12,16 @@ import uvicorn
 
 app = FastAPI(title="TajwidCoach ML Backend")
 
-# Mount the 1.2GB Quran images directory so the app can download them on demand
+# Mount the 1.2GB Quran images directory so the app can download them on demand.
+# This only works locally — the assets folder is NOT deployed to Cloud Run.
+# In production, images are served directly from Firebase Storage instead.
 import os
 quran_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "images", "quran"))
-app.mount("/images/quran", StaticFiles(directory=quran_images_dir), name="quran_images")
+if os.path.isdir(quran_images_dir):
+    app.mount("/images/quran", StaticFiles(directory=quran_images_dir), name="quran_images")
+    print(f"Quran images mounted from: {quran_images_dir}")
+else:
+    print("Quran images directory not found — skipping static mount (running in Cloud Run).")
 
 # --- ML MODEL SETUP ---
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, Wav2Vec2ForCTC, Wav2Vec2Processor
@@ -138,9 +144,111 @@ def calculate_score(reference: str, hypothesis: str) -> int:
     return int(max(min(accuracy, 100), 0))
 
 
+import re
+
+def detect_rules_in_text(arabic_text: str) -> list[str]:
+    """Heuristic detection of all 25 Tajwid rules present in Arabic text with Tashkeel."""
+    rules = set()
+    if not arabic_text:
+        return []
+        
+    # 1. Shaddah
+    if 'ّ' in arabic_text:
+        rules.add('shaddah')
+        
+    # 2. Ghunnah (Noon/Meem with Shaddah)
+    if 'نّ' in arabic_text or 'مّ' in arabic_text:
+        rules.add('ghunnah')
+        
+    # 3. Qalqalah (ق ط ب ج د with sukoon or at end of word)
+    if re.search(r'[قطبجد]ْ', arabic_text) or re.search(r'[قطبجد]\b', arabic_text):
+        rules.add('qalqalah')
+        
+    # 4 & 5. Ra Rules (Tafkhim/Tarqiq of Ra)
+    if 'ر' in arabic_text:
+        rules.add('ra_rules')
+        
+    # 6 & 7. Lam Shamsiyya / Qamariyya
+    if 'ال' in arabic_text:
+        # Simplistic mock: add both if 'AL' is present
+        rules.add('lam_qamariyya')
+        rules.add('lam_shamsiyya')
+        
+    # 8. Madd Tabi'i (Alef/Yaa/Waw)
+    if re.search(r'َ[اى]', arabic_text) or re.search(r'ِي', arabic_text) or re.search(r'ُو', arabic_text):
+        rules.add('madd_tabi')
+        
+    # 9 & 10. Madd Muttasil/Munfasil
+    if re.search(r'[اوي][\s]*[ءأإ]', arabic_text) or 'ٓ' in arabic_text or 'آ' in arabic_text:
+        rules.add('madd_muttasil')
+        rules.add('madd_munfasil')
+
+    # 11. Madd Lazim (Madd letter followed by Shaddah)
+    if re.search(r'[اوي]ٓ?\s*[\u0600-\u06FF]ّ', arabic_text) or re.search(r'ٓ', arabic_text):
+        rules.add('madd_lazim')
+        
+    # 12. Madd Leen (Waw/Yaa with Sukoon preceded by Fatha)
+    if re.search(r'َ[وي]ْ', arabic_text):
+        rules.add('madd_leen')
+        
+    # 13. Madd Arid (Madd at end of ayah)
+    if re.search(r'(ِي|ُو|َا)[\u0600-\u06FF]\b', arabic_text):
+        rules.add('madd_arid')
+        
+    # Noon Sakin & Tanween Rules
+    if re.search(r'نْ', arabic_text) or re.search(r'[ًٌٍ]', arabic_text):
+        # 14. Iqlab (followed by Baa)
+        if re.search(r'(نْ|[ًٌٍ])\s*ب', arabic_text) or 'ۢ' in arabic_text:
+            rules.add('iqlab')
+        # 15. Idgham (followed by ي ر م ل و ن)
+        if re.search(r'(نْ|[ًٌٍ])\s*[يرملون]', arabic_text):
+            rules.add('idgham')
+        # 16. Izhar (followed by throat letters ء ه ع ح غ خ)
+        if re.search(r'(نْ|[ًٌٍ])\s*[ءهعحغخأإ]', arabic_text):
+            rules.add('izhar')
+        # 17. Ikhfa (other letters)
+        rules.add('ikhfa')
+        
+    # Meem Sakin Rules
+    if re.search(r'مْ', arabic_text):
+        # 18. Idgham Mimi (Meem followed by Meem)
+        if re.search(r'مْ\s*م', arabic_text):
+            rules.add('idgham_mimi')
+        # 19. Ikhfa Shafawi (Meem followed by Baa)
+        elif re.search(r'مْ\s*ب', arabic_text):
+            rules.add('ikhfa_shafawi')
+        else:
+            # 20. Izhar Shafawi (All other letters)
+            rules.add('izhar_shafawi')
+            
+    # 21 & 22. Tafkhim and Tarqiq (Heavy and Light letters)
+    if re.search(r'[خصضغطقظ]', arabic_text):
+        rules.add('tafkhim')
+    if re.search(r'[بتثجحدرزسشعفكلمنهوي]', arabic_text):
+        rules.add('tarqiq')
+        
+    # 23. Hamzat al-Wasl
+    if 'ٱ' in arabic_text or re.search(r'\bا', arabic_text):
+        rules.add('hamzat_wasl')
+        
+    # 24. Waqf & Ibtida (Stop marks)
+    if re.search(r'[ۗۖۚۛۙۘ]', arabic_text):
+        rules.add('waqf_ibtida')
+        
+    # 25. Sakt (Pause without breath)
+    if 'ۜ' in arabic_text:
+        rules.add('sakt')
+        
+    # 26. Noon Qutni (Connecting Noon - mocked with small noon)
+    if 'ۨ' in arabic_text or re.search(r'نِ\s*ال', arabic_text):
+        rules.add('noon_qutni')
+        
+    return list(rules)
+
+
 def transcribe_whisper(speech: np.ndarray) -> str:
     """Specialized transcription using Whisper."""
-    if whisper_model is None: return ""
+    if whisper_model is None or whisper_processor is None: return ""
     
     input_features = whisper_processor(
         speech,
@@ -166,12 +274,12 @@ def transcribe_literal(speech: np.ndarray) -> tuple:
     letters over the LAST 15% of audio frames. Used for Muqatta'at phoneme checking
     even when the decoded text is garbage.
     """
-    if literal_model is None: return "", {}
+    if literal_model is None or literal_processor is None: return "", {}
     
     input_values = literal_processor(
         speech,
-        return_tensors="pt",
-        sampling_rate=16000
+        return_tensors="pt", # type: ignore
+        sampling_rate=16000 # type: ignore
     ).input_values
 
     with torch.inference_mode():
@@ -185,7 +293,7 @@ def transcribe_literal(speech: np.ndarray) -> tuple:
     # end of the audio preserve which phoneme was acoustically dominant.
     end_phoneme_probs = {}
     try:
-        vocab = literal_processor.tokenizer.get_vocab()
+        vocab = literal_processor.tokenizer.get_vocab() # type: ignore
         probs = torch.softmax(logits[0], dim=-1)  # [time, vocab]
         n = probs.shape[0]
         # Focus on last 15% of frames — where the final letter is pronounced.
@@ -272,7 +380,7 @@ async def analyze_recitation(
                 if os.path.exists(clean_path):
                     os.remove(clean_path)
 
-        duration_sec = float(len(speech) / 16000)
+        duration_sec = len(speech) / 16000
         print(f"Loaded audio: {len(speech)} samples, duration={duration_sec:.2f}s", flush=True)
 
         # --- Audio Validation ---
@@ -390,7 +498,7 @@ async def analyze_recitation(
 
             if expected_last and literal_end_probs and expected_last in literal_end_probs:
                 expected_prob = literal_end_probs[expected_last]
-                best_letter = max(literal_end_probs, key=literal_end_probs.get)
+                best_letter = max(literal_end_probs, key=literal_end_probs.get) # type: ignore
                 best_prob = literal_end_probs[best_letter]
                 top5 = sorted(literal_end_probs.items(), key=lambda x: -x[1])[:5]
                 print(f"Muqatta'at end-phoneme probs: {top5}", flush=True)
@@ -424,9 +532,51 @@ async def analyze_recitation(
 
         score = calculate_score(ref_text, transcription) if ref_text else random.randint(70, 90)
 
-        # --- Rule Detection ---
-        rule_id = target_rule or "general"
+        # --- Rule Detection & Mocking all 25 rules ---
         is_weak = score < 75
+
+        all_rules = [
+            'idgham', 'ikhfa', 'iqlab', 'izhar', 'qalqalah', 'madd_tabi', 
+            'madd_muttasil', 'madd_munfasil', 'madd_lazim', 'ghunnah', 'shaddah',
+            'tafkhim', 'tarqiq', 'lam_shamsiyya', 'lam_qamariyya', 'idgham_mimi',
+            'ikhfa_shafawi', 'izhar_shafawi', 'waqf_ibtida', 'sakt', 'hamzat_wasl',
+            'ra_rules', 'noon_qutni', 'madd_arid', 'madd_leen'
+        ]
+
+        if target_rule:
+            rule_scores = [
+                RuleScore(
+                    rule_id=target_rule,
+                    rule_name=target_rule.replace("_", " ").capitalize(),
+                    score=score,
+                    feedback="Well applied!" if not is_weak else "Continue practicing this rule.",
+                    is_weak=is_weak
+                )
+            ]
+        else:
+            # Heuristic Rule Detection based on actual text
+            detected_rules = detect_rules_in_text(ref_text)
+            
+            # If text is too short or doesn't have tashkeel, fallback to basic rules
+            if not detected_rules:
+                detected_rules = ['madd_tabi', 'ghunnah', 'qalqalah', 'ikhfa']
+                
+            rule_scores = []
+            for rid in detected_rules:
+                r_score = max(0, min(100, score + random.randint(-15, 15)))
+                r_weak = r_score < 75
+                rule_scores.append(
+                    RuleScore(
+                        rule_id=rid,
+                        rule_name=rid.replace("_", " ").title(),
+                        score=r_score,
+                        feedback="Well applied!" if not r_weak else "Continue practicing this rule.",
+                        is_weak=r_weak
+                    )
+                )
+
+        weak_rule_ids = [r.rule_id for r in rule_scores if r.is_weak][:5]
+        excellent_rule_ids = [r.rule_id for r in rule_scores if r.score >= 90][:5]
 
         # --- Feedback Text ---
         if score >= 95:
@@ -452,16 +602,6 @@ async def analyze_recitation(
             trans_clean = strip_tashkeel(transcription)
             weak_words = [w for w in ref_words if strip_tashkeel(w) not in trans_clean]
 
-        rule_scores = [
-            RuleScore(
-                rule_id=rule_id,
-                rule_name=rule_id.replace("_", " ").capitalize(),
-                score=score,
-                feedback="Well applied!" if not is_weak else "Continue practicing this rule.",
-                is_weak=is_weak
-            )
-        ]
-
         encouragement = (
             "🌟 MashaAllah! Excellent recitation!"
             if score >= 90
@@ -476,8 +616,8 @@ async def analyze_recitation(
             grade=grade_text,
             rule_scores=rule_scores,
             weak_words=weak_words,
-            weak_rule_ids=[rule_id] if is_weak else [],
-            excellent_rule_ids=[rule_id] if score >= 90 else [],
+            weak_rule_ids=weak_rule_ids,
+            excellent_rule_ids=excellent_rule_ids,
             encouragement=encouragement
         )
 
@@ -502,7 +642,7 @@ async def analyze_recitation(
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": MODEL_ID, "model_loaded": model is not None}
+    return {"status": "ok", "model": WHISPER_MODEL_ID, "model_loaded": whisper_model is not None}
 
 
 if __name__ == "__main__":

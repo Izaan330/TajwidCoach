@@ -4,18 +4,24 @@ import 'package:dio/dio.dart';
 import '../models/tajwid_rule_model.dart';
 
 class TajwidApiService {
-  // CONFIGURATION: Using local backend for development
-  // 10.0.2.2 is the special address to reach the host machine from Android Emulator.
-  // We use your real local IP (192.168.29.237) for real Android device testing.
-  static const String _localUrl = 'http://192.168.29.237:8000/v1'; 
-  static const String _prodUrl = 'https://tajwid-backend-73260634451.asia-south1.run.app/v1';
+  // CONFIGURATION: Using dynamic local backend for development
+  // - Android Emulator uses 10.0.2.2 to access the host machine's localhost.
+  // - iOS Simulator and Web use localhost / 127.0.0.1.
+  // - For physical device testing, replace with your development machine's local IP (e.g. 'http://192.168.1.100:8000/v1').
+  static String get _localUrl {
+    if (kIsWeb) return 'http://localhost:8000/v1';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8000/v1';
+    return 'http://localhost:8000/v1';
+  }
+
+  static const String _prodUrl = 'https://tajwid-backend-hsuejed2mq-el.a.run.app/v1';
   
-  static const String _baseUrl = kDebugMode ? _localUrl : _prodUrl;
+  static String get _baseUrl => kDebugMode ? _localUrl : _prodUrl;
   
   final Dio _dio = Dio(BaseOptions(
     baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 300),
+    connectTimeout: const Duration(seconds: 3), // Snappy 3-second connection timeout for offline/local debugging fallback
+    receiveTimeout: const Duration(seconds: 15),
   ));
 
   /// Uploads audio file for Tajwid analysis

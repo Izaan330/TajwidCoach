@@ -286,7 +286,7 @@ class _LastReadCard extends StatelessWidget {
             if (lastRead.scriptMode != null) {
               final mode = QuranScript.values.firstWhere(
                 (m) => m.name == lastRead.scriptMode,
-                orElse: () => QuranScript.mushaf,
+                orElse: () => QuranScript.indoPak,
               );
               await settings.setQuranScript(mode);
             }

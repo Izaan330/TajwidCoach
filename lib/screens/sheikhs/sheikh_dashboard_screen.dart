@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/sheikh_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -607,8 +608,89 @@ class _MyStudentsTab extends StatelessWidget {
   }
 }
 
-class _EarningsTab extends StatelessWidget {
+class _EarningsTab extends StatefulWidget {
   const _EarningsTab();
+
+  @override
+  State<_EarningsTab> createState() => _EarningsTabState();
+}
+
+class _EarningsTabState extends State<_EarningsTab> {
+  bool _loading = true;
+  int _totalEarnings = 0;
+  final String _nextPayoutDate = 'Every 1st of the month';
+  List<Map<String, dynamic>> _payouts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchEarnings());
+  }
+
+  Future<void> _fetchEarnings() async {
+    final auth = context.read<AuthProvider>();
+    final sheikhProvider = context.read<SheikhProvider>();
+    final sheikhId = auth.user?.uid;
+    if (sheikhId == null) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final sessionPrice = sheikhProvider.currentSheikh?.pricePerSession ?? 500;
+
+      // 1. Compute earnings from approved recordings
+      final recordingsSnap = await firestore
+          .collection('recordings')
+          .where('sheikhId', isEqualTo: sheikhId)
+          .where('sheikhApproved', isEqualTo: true)
+          .get();
+
+      int total = 0;
+      for (final doc in recordingsSnap.docs) {
+        final price = (doc.data()['pricePerSession'] as num?)?.toInt() ?? sessionPrice;
+        total += price;
+      }
+
+      // 2. Fetch payout history
+      final payoutsSnap = await firestore
+          .collection('payouts')
+          .where('sheikhId', isEqualTo: sheikhId)
+          .orderBy('date', descending: true)
+          .limit(5)
+          .get();
+
+      final List<Map<String, dynamic>> payouts = payoutsSnap.docs.map((doc) {
+        final data = doc.data();
+        final ts = data['date'];
+        String dateStr = 'Unknown date';
+        if (ts is Timestamp) {
+          final dt = ts.toDate();
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          dateStr = '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+        } else if (ts is String) {
+          dateStr = ts;
+        }
+        return {
+          'date': dateStr,
+          'amount': '₹${data['amount'] ?? 0}',
+          'status': data['status'] ?? 'Completed',
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _totalEarnings = total;
+          _payouts = payouts;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching sheikh earnings: $e');
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -642,14 +724,16 @@ class _EarningsTab extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
-                Text(
-                  '₹4,250.00',
-                  style: GoogleFonts.outfit(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
-                ),
+                _loading
+                    ? const CircularProgressIndicator(color: Colors.black)
+                    : Text(
+                        '₹${_totalEarnings.toStringAsFixed(2)}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -657,9 +741,9 @@ class _EarningsTab extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Next Payout: May 15',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.black),
+                  child: Text(
+                    'Next Payout: $_nextPayoutDate',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.black),
                   ),
                 ),
               ],
@@ -671,8 +755,30 @@ class _EarningsTab extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 16),
-          const _PayoutItem(date: 'April 30, 2024', amount: '₹1,500', status: 'Completed'),
-          const _PayoutItem(date: 'April 15, 2024', amount: '₹2,750', status: 'Completed'),
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else if (_payouts.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.cardWhite,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.divider),
+              ),
+              child: const Center(
+                child: Text(
+                  'No payouts yet. Earnings are paid out on the 1st of each month.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ..._payouts.map((p) => _PayoutItem(
+                  date: p['date'] as String,
+                  amount: p['amount'] as String,
+                  status: p['status'] as String,
+                )),
           const SizedBox(height: 32),
           Center(
             child: TextButton.icon(

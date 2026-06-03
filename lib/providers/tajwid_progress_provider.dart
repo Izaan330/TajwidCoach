@@ -41,14 +41,23 @@ class TajwidRuleProgress {
 
 class TajwidProgressProvider extends ChangeNotifier {
   static const _storageKey = 'tajwid_progress_data';
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore? _firestore;
   Map<String, TajwidRuleProgress> _progressMap = {};
   String? _userId;
 
   Map<String, TajwidRuleProgress> get progressMap => _progressMap;
 
-  TajwidProgressProvider() {
+  TajwidProgressProvider()
+      : _firestore = _tryGetFirestore() {
     _loadProgress();
+  }
+
+  static FirebaseFirestore? _tryGetFirestore() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Update the current user ID and trigger sync if needed
@@ -81,15 +90,15 @@ class TajwidProgressProvider extends ChangeNotifier {
     
     // Sync to cloud
     if (_userId != null) {
-      await _syncToFirestore();
+      _syncToFirestore();
     }
   }
 
   Future<void> _syncToFirestore() async {
-    if (_userId == null) return;
+    if (_userId == null || _firestore == null) return;
     try {
       final data = _progressMap.map((key, value) => MapEntry(key, value.toJson()));
-      await _firestore.collection('users').doc(_userId).collection('progress').doc('tajwid').set({
+      await _firestore!.collection('users').doc(_userId).collection('progress').doc('tajwid').set({
         'data': data,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -99,9 +108,9 @@ class TajwidProgressProvider extends ChangeNotifier {
   }
 
   Future<void> _syncFromFirestore() async {
-    if (_userId == null) return;
+    if (_userId == null || _firestore == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(_userId).collection('progress').doc('tajwid').get();
+      final doc = await _firestore!.collection('users').doc(_userId).collection('progress').doc('tajwid').get();
       if (doc.exists) {
         final Map<String, dynamic> data = doc.data()!['data'] ?? {};
         _progressMap = data.map((key, value) => MapEntry(key, TajwidRuleProgress.fromJson(value)));

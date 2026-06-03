@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-db_path = r'c:\Users\Izaan\.gemini\antigravity\scratch\TajwidCoach\assets\databases\quran.db'
+db_path = '/Users/izaanjs/.gemini/antigravity/scratch/TajwidCoach/assets/databases/quran.db'
 
 if not os.path.exists(db_path):
     print(f"Error: Database not found at {db_path}")

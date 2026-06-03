@@ -3,12 +3,17 @@ import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/premium_provider.dart';
+import '../../services/revenue_cat_service.dart';
 import '../../theme/app_theme.dart';
 import 'privacy_policy_screen.dart';
 import '../progress/family_leaderboard_screen.dart';
 import '../store/paywall_screen.dart';
 import 'acknowledgments_screen.dart';
 import 'terms_of_use_screen.dart';
+import 'feedback_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -49,6 +54,15 @@ class SettingsScreen extends StatelessWidget {
                 : const Icon(Icons.chevron_right_rounded),
           ),
           const SizedBox(height: 16),
+          if (premium.isPremium) ...[
+            _SettingsCard(
+              icon: Icons.manage_accounts_rounded,
+              title: 'Manage Subscription',
+              subtitle: 'Update payment method or cancel plan',
+              onTap: () => RevenueCatService.presentCustomerCenter(),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ───── Family Plan ─────
           if (premium.isFamilyPlan) ...[
@@ -112,21 +126,25 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.feedback_rounded,
             title: 'Feedback',
             subtitle: 'Send us your thoughts and suggestions',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Feedback feature coming soon')),
-              );
-            },
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+            ),
           ),
 
           _SettingsCard(
             icon: Icons.star_rate_rounded,
             title: 'Rate Us',
             subtitle: 'Love the app? Leave a review',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Rate us feature coming soon')),
-              );
+            onTap: () async {
+              final inAppReview = InAppReview.instance;
+              if (await inAppReview.isAvailable()) {
+                await inAppReview.requestReview();
+              } else {
+                await inAppReview.openStoreListing(
+                  appStoreId: '6745678901', // Replace with real App Store ID before release
+                );
+              }
             },
           ),
 
@@ -135,9 +153,8 @@ class SettingsScreen extends StatelessWidget {
             title: 'Share',
             subtitle: 'Share TajwidCoach with friends',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share feature coming soon')),
-              );
+              // Direct OS native share sheet via share_plus
+              importSharePlusAndShare(context);
             },
           ),
 
@@ -201,12 +218,20 @@ class SettingsScreen extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                Text(
-                  'TajwidCoach v1.0.0+1',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary.withAlpha(180),
-                  ),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final versionText = snapshot.hasData
+                        ? 'TajwidCoach v${snapshot.data!.version}+${snapshot.data!.buildNumber} (Production)'
+                        : 'TajwidCoach v1.0.0+1 (Production)';
+                    return Text(
+                      versionText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary.withAlpha(180),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -262,20 +287,20 @@ class SettingsScreen extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<AuthProvider>().signOut();
-              // The AuthWrapper at the root of the app will automatically
-              // switch to the AuthScreen when isAuthenticated becomes false.
-              Navigator.of(context).popUntil((route) => route.isFirst);
+            onPressed: () async {
+              await context.read<AuthProvider>().signOut();
+              if (dialogCtx.mounted) {
+                Navigator.of(dialogCtx).popUntil((route) => route.isFirst);
+              }
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
@@ -438,6 +463,9 @@ class _ScriptOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final premium = context.watch<PremiumProvider>();
+    final isLocked = script != QuranScript.indoPak && !premium.isPremium;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -503,7 +531,10 @@ class _ScriptOption extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            if (isSelected)
+            if (isLocked)
+              const Icon(Icons.lock_outline_rounded,
+                  color: AppTheme.textHint, size: 20)
+            else if (isSelected)
               const Icon(Icons.check_circle_rounded,
                   color: AppTheme.primaryGreen),
           ],
@@ -898,4 +929,14 @@ class _FamilyManagerSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+void importSharePlusAndShare(BuildContext context) {
+  final box = context.findRenderObject() as RenderBox?;
+  
+  Share.share(
+    'Assalamu Alaikum! Join me in using TajwidCoach to learn and master Quranic Tajweed with real-time AI audio feedback. 📖🎤 Download now and let\'s build our daily Quran habits together! https://tajwidcoach.app',
+    subject: 'TajwidCoach App - Learn Quranic Tajweed',
+    sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+  );
 }

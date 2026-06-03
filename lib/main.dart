@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
+import 'firebase_options.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
@@ -13,6 +14,7 @@ import 'providers/settings_provider.dart';
 import 'providers/tajwid_progress_provider.dart';
 import 'providers/sheikh_provider.dart';
 import 'services/offline_service.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +22,9 @@ void main() async {
   bool isFirebaseInitialized = false;
   // Initialize Firebase (requires google-services.json or firebase_options.dart)
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     isFirebaseInitialized = true;
     
     // Initialize Notifications
@@ -36,6 +40,9 @@ void main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  
+  // Initialize Mobile Ads SDK and prefetch rewarded ad
+  await AdService.init();
 
   runApp(
     MultiProvider(
