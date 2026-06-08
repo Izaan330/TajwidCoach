@@ -20,8 +20,8 @@ class TajwidApiService {
   
   final Dio _dio = Dio(BaseOptions(
     baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 3), // Snappy 3-second connection timeout for offline/local debugging fallback
-    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 30), // Cloud Run cold-start can take up to 30s
+    receiveTimeout: const Duration(seconds: 120), // ML inference (Whisper + Wav2Vec2) can take ~60s
   ));
 
   /// Uploads audio file for Tajwid analysis

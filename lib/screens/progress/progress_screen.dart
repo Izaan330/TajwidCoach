@@ -229,7 +229,8 @@ class _StreakTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.local_fire_department_rounded, color: AppTheme.accentAmber, size: 54),
+                  child: const Icon(Icons.local_fire_department_rounded,
+                      color: AppTheme.accentAmber, size: 54),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -346,7 +347,8 @@ class _StreakTab extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.check_circle_rounded, color: AppTheme.ikhfaGreen, size: 24),
+                  Icon(Icons.check_circle_rounded,
+                      color: AppTheme.ikhfaGreen, size: 24),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -417,7 +419,8 @@ class _StreakTab extends StatelessWidget {
     final today = DateTime.now();
     for (int i = 0; i < 7; i++) {
       final d = today.subtract(Duration(days: i));
-      final ds = "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+      final ds =
+          "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
       if (heatmapData[ds] != null && heatmapData[ds]! > 0) {
         days++;
       }
@@ -583,7 +586,8 @@ class _PreviewItem extends StatelessWidget {
   final int rank;
   final int xp;
 
-  const _PreviewItem({required this.name, required this.rank, required this.xp});
+  const _PreviewItem(
+      {required this.name, required this.rank, required this.xp});
 
   @override
   Widget build(BuildContext context) {
@@ -594,7 +598,8 @@ class _PreviewItem extends StatelessWidget {
           backgroundColor:
               rank == 1 ? AppTheme.accentAmber : AppTheme.backgroundCream,
           child: Text('$rank',
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              style:
+                  const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 12),
         Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -850,11 +855,13 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
                   decoration: BoxDecoration(
                     color: AppTheme.premiumGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.premiumGold.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppTheme.premiumGold.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.workspace_premium_rounded, color: AppTheme.premiumGold, size: 20),
+                      const Icon(Icons.workspace_premium_rounded,
+                          color: AppTheme.premiumGold, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -866,7 +873,8 @@ class _StreakHeatmapState extends State<_StreakHeatmap> {
                           ),
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: AppTheme.premiumGold, size: 18),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: AppTheme.premiumGold, size: 18),
                     ],
                   ),
                 ),
@@ -1493,22 +1501,28 @@ class _ActivityRingPainter extends CustomPainter {
 
 class _QuickStatsRow extends StatelessWidget {
   final StreakProvider streak;
-  
+
   const _QuickStatsRow({required this.streak});
 
   @override
   Widget build(BuildContext context) {
     final totalMinutes = streak.heatmapData.values.fold(0, (a, b) => a + b);
     final totalVerses = totalMinutes * 3;
-    final totalXp = context.watch<TajwidProgressProvider>().totalMasteryScore * 100;
+    final totalXp =
+        context.watch<TajwidProgressProvider>().totalMasteryScore * 100;
 
     return Row(
       children: [
-        Expanded(child: _buildStatCard(Icons.menu_book_rounded, totalVerses, 'Verses')),
+        Expanded(
+            child:
+                _buildStatCard(Icons.menu_book_rounded, totalVerses, 'Verses')),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard(Icons.schedule_rounded, totalMinutes, 'Minutes')),
+        Expanded(
+            child: _buildStatCard(
+                Icons.schedule_rounded, totalMinutes, 'Minutes')),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard(Icons.auto_awesome_rounded, totalXp, 'XP')),
+        Expanded(
+            child: _buildStatCard(Icons.auto_awesome_rounded, totalXp, 'XP')),
       ],
     );
   }
@@ -1570,7 +1584,9 @@ class _BadgesTab extends StatelessWidget {
     final int earnedCount = StreakService.allBadges.where((badge) {
       if (earnedBadges.contains(badge.id)) return true;
       if (badge.id == 'khadim' && premium.isPremium) return true;
-      if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) return true;
+      if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) {
+        return true;
+      }
       return false;
     }).length;
 
@@ -1583,7 +1599,8 @@ class _BadgesTab extends StatelessWidget {
             children: [
               Text(
                 '$earnedCount / ${StreakService.allBadges.length} Earned',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1592,7 +1609,8 @@ class _BadgesTab extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: earnedCount / StreakService.allBadges.length,
                     backgroundColor: AppTheme.divider,
-                    valueColor: const AlwaysStoppedAnimation(AppTheme.primaryGreen),
+                    valueColor:
+                        const AlwaysStoppedAnimation(AppTheme.primaryGreen),
                     minHeight: 8,
                   ),
                 ),
@@ -1613,10 +1631,11 @@ class _BadgesTab extends StatelessWidget {
             itemBuilder: (context, index) {
               final badge = StreakService.allBadges[index];
               bool earned = earnedBadges.contains(badge.id);
-              
+
               if (badge.isPremiumOnly) {
-                if (badge.id == 'khadim' && premium.isPremium) earned = true;
-                if (badge.id == 'family_shield' && premium.tier == PremiumTier.family) earned = true;
+                if (badge.id == 'khadim' && premium.isPremium) { earned = true; }
+                if (badge.id == 'family_shield' &&
+                    premium.tier == PremiumTier.family) { earned = true; }
               }
 
               return Column(
@@ -1627,18 +1646,23 @@ class _BadgesTab extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: earned ? null : const Color(0xFF2C2C2E),
-                      gradient: earned ? const LinearGradient(
-                        colors: [Color(0xFFFFD700), Color(0xFFF59E0B)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ) : null,
-                      boxShadow: earned ? [
-                        BoxShadow(
-                          color: AppTheme.accentAmber.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        )
-                      ] : null,
+                      gradient: earned
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFFD700), Color(0xFFF59E0B)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      boxShadow: earned
+                          ? [
+                              BoxShadow(
+                                color:
+                                    AppTheme.accentAmber.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              )
+                            ]
+                          : null,
                     ),
                     child: Stack(
                       alignment: Alignment.center,
@@ -1646,7 +1670,9 @@ class _BadgesTab extends StatelessWidget {
                         Icon(
                           badge.icon,
                           size: 32,
-                          color: earned ? Colors.black : Colors.white.withValues(alpha: 0.4),
+                          color: earned
+                              ? Colors.black
+                              : Colors.white.withValues(alpha: 0.4),
                         ),
                         if (!earned)
                           Positioned(
@@ -1658,7 +1684,8 @@ class _BadgesTab extends StatelessWidget {
                                 color: Colors.black87,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.lock_rounded, size: 12, color: Colors.white70),
+                              child: const Icon(Icons.lock_rounded,
+                                  size: 12, color: Colors.white70),
                             ),
                           ),
                       ],
@@ -1739,7 +1766,8 @@ class _TasbihTabState extends State<_TasbihTab> {
                 child: DropdownButton<int>(
                   value: _target,
                   dropdownColor: AppTheme.backgroundSurface,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.primaryGreen),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                      color: AppTheme.primaryGreen),
                   style: GoogleFonts.plusJakartaSans(
                       color: AppTheme.textPrimary,
                       fontSize: 16,
@@ -1747,7 +1775,8 @@ class _TasbihTabState extends State<_TasbihTab> {
                   items: [33, 99, 1000].map((int value) {
                     return DropdownMenuItem<int>(
                       value: value,
-                      child: Text('Target: ${value == 1000 ? 'Infinity' : value}'),
+                      child:
+                          Text('Target: ${value == 1000 ? 'Infinity' : value}'),
                     );
                   }).toList(),
                   onChanged: (int? newValue) {
@@ -1762,75 +1791,78 @@ class _TasbihTabState extends State<_TasbihTab> {
               ),
             ),
             const SizedBox(height: 40),
-          GestureDetector(
-            onTap: _increment,
-            child: Column(
-              children: [
-                Container(
-                  width: 250,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppTheme.primaryGreen.withValues(alpha: 0.2),
-                        AppTheme.primaryGreen.withValues(alpha: 0.05),
+            GestureDetector(
+              onTap: _increment,
+              child: Column(
+                children: [
+                  Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          AppTheme.primaryGreen.withValues(alpha: 0.2),
+                          AppTheme.primaryGreen.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      border: Border.all(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                          width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
                       ],
                     ),
-                    border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.5), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                        blurRadius: 40,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$_count',
-                      style: GoogleFonts.outfit(
-                        fontSize: 80,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryGreen,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_count == _target)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    child: Center(
                       child: Text(
-                        'GOAL REACHED!',
-                        style: GoogleFonts.plusJakartaSans(
+                        '$_count',
+                        style: GoogleFonts.outfit(
+                          fontSize: 80,
+                          fontWeight: FontWeight.w900,
                           color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                          letterSpacing: 1,
                         ),
                       ),
                     ),
                   ),
-              ],
+                  if (_count == _target)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'GOAL REACHED!',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppTheme.primaryGreen,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 40),
-          IconButton(
-            onPressed: _reset,
-            icon: const Icon(Icons.refresh_rounded),
-            iconSize: 40,
-            color: AppTheme.textHint,
-            tooltip: 'Reset',
-          ),
-        ],
+            const SizedBox(height: 40),
+            IconButton(
+              onPressed: _reset,
+              icon: const Icon(Icons.refresh_rounded),
+              iconSize: 40,
+              color: AppTheme.textHint,
+              tooltip: 'Reset',
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -1844,13 +1876,16 @@ class _DuasTab extends StatelessWidget {
     final duas = [
       {
         'title': 'Waking Up',
-        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
-        'translation': 'All praise is for Allah who gave us life after having taken it from us and unto Him is the resurrection.',
+        'arabic':
+            'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
+        'translation':
+            'All praise is for Allah who gave us life after having taken it from us and unto Him is the resurrection.',
       },
       {
         'title': 'Before Sleeping',
         'arabic': 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ',
-        'translation': 'In Your name my Lord, I lie down and in Your name I rise.',
+        'translation':
+            'In Your name my Lord, I lie down and in Your name I rise.',
       },
       {
         'title': 'Before Eating',
@@ -1859,18 +1894,24 @@ class _DuasTab extends StatelessWidget {
       },
       {
         'title': 'After Eating',
-        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا وَجَعَلَنَا مُسْلِمِينَ',
-        'translation': 'Praise be to Allah Who has fed us and given us drink, and made us Muslims.',
+        'arabic':
+            'الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا وَجَعَلَنَا مُسْلِمِينَ',
+        'translation':
+            'Praise be to Allah Who has fed us and given us drink, and made us Muslims.',
       },
       {
         'title': 'Entering Home',
-        'arabic': 'بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى رَبِّنَا تَوَكَّلْنَا',
-        'translation': 'In the name of Allah we enter, in the name of Allah we leave, and upon our Lord we rely.',
+        'arabic':
+            'بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى رَبِّنَا تَوَكَّلْنَا',
+        'translation':
+            'In the name of Allah we enter, in the name of Allah we leave, and upon our Lord we rely.',
       },
       {
         'title': 'Leaving Home',
-        'arabic': 'بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ',
-        'translation': 'In the name of Allah, I place my trust in Allah, and there is no might nor power except with Allah.',
+        'arabic':
+            'بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ',
+        'translation':
+            'In the name of Allah, I place my trust in Allah, and there is no might nor power except with Allah.',
       },
       {
         'title': 'Entering Mosque',
@@ -1885,7 +1926,8 @@ class _DuasTab extends StatelessWidget {
       {
         'title': 'For Parents',
         'arabic': 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
-        'translation': 'My Lord, have mercy upon them as they brought me up [when I was] small.',
+        'translation':
+            'My Lord, have mercy upon them as they brought me up [when I was] small.',
       },
       {
         'title': 'For Knowledge',
@@ -1894,13 +1936,17 @@ class _DuasTab extends StatelessWidget {
       },
       {
         'title': 'When Traveling',
-        'arabic': 'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ',
-        'translation': 'Glory to Him who has brought this under our control, though we were unable to do it ourselves, and to our Lord we shall return.',
+        'arabic':
+            'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ',
+        'translation':
+            'Glory to Him who has brought this under our control, though we were unable to do it ourselves, and to our Lord we shall return.',
       },
       {
         'title': 'Entering Bathroom',
-        'arabic': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ',
-        'translation': 'O Allah, I seek protection in You from the male and female shaitan.',
+        'arabic':
+            'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ',
+        'translation':
+            'O Allah, I seek protection in You from the male and female shaitan.',
       },
       {
         'title': 'Leaving Bathroom',
@@ -1909,33 +1955,43 @@ class _DuasTab extends StatelessWidget {
       },
       {
         'title': 'After Wudu',
-        'arabic': 'أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
-        'translation': 'I bear witness that there is no god but Allah alone, without partner, and I bear witness that Muhammad is His servant and Messenger.',
+        'arabic':
+            'أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
+        'translation':
+            'I bear witness that there is no god but Allah alone, without partner, and I bear witness that Muhammad is His servant and Messenger.',
       },
       {
         'title': 'Hearing Athan',
-        'arabic': 'اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ',
-        'translation': 'O Allah, Lord of this perfect call and the prayer to be offered, grant Muhammad the privilege and the excellence.',
+        'arabic':
+            'اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ',
+        'translation':
+            'O Allah, Lord of this perfect call and the prayer to be offered, grant Muhammad the privilege and the excellence.',
       },
       {
         'title': 'Wearing Clothes',
-        'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي كَسَانِي هَذَا الثَّوْبَ وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ',
-        'translation': 'Praise be to Allah Who has clothed me with this garment and provided it for me without any might or power on my part.',
+        'arabic':
+            'الْحَمْدُ لِلَّهِ الَّذِي كَسَانِي هَذَا الثَّوْبَ وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ',
+        'translation':
+            'Praise be to Allah Who has clothed me with this garment and provided it for me without any might or power on my part.',
       },
       {
         'title': 'Looking in the Mirror',
         'arabic': 'اللَّهُمَّ أَنْتَ حَسَّنْتَ خَلْقِي فَحَسِّنْ خُلُقِي',
-        'translation': 'O Allah, You have made my physical appearance beautiful, so make my character beautiful.',
+        'translation':
+            'O Allah, You have made my physical appearance beautiful, so make my character beautiful.',
       },
       {
         'title': 'For Anxiety and Sorrow',
-        'arabic': 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ',
-        'translation': 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness.',
+        'arabic':
+            'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ',
+        'translation':
+            'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness.',
       },
       {
         'title': 'Seeking Ease',
         'arabic': 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي',
-        'translation': 'My Lord, expand for me my chest [with assurance] and ease for me my task.',
+        'translation':
+            'My Lord, expand for me my chest [with assurance] and ease for me my task.',
       },
     ];
 
@@ -2106,7 +2162,8 @@ class _EventsTabState extends State<_EventsTab> {
                             Icon(
                               Icons.calendar_month_rounded,
                               size: 14,
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.6),
+                              color:
+                                  AppTheme.primaryGreen.withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 6),
                             Text(
