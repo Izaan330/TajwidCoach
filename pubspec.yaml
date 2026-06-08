@@ -81,8 +81,6 @@ flutter:
 
   assets:
     - assets/lottie/
-    - assets/images/
-    - assets/images/quran/
     - assets/icons/
     - assets/fonts/
     - assets/databases/
