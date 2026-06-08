@@ -343,7 +343,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _OnboardingPage(
       icon: Icons.mic_rounded,
       title: 'Assalamu Alaikum!',
-      subtitle: 'Welcome to TajwidCoach',
+      subtitle: 'Welcome to Quran Pro',
       description:
           'Your AI-powered companion for perfecting Quran recitation. Our system detects 25+ Tajwid rules in real-time.',
       color: AppTheme.primaryGreen,

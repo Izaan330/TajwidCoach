@@ -22,6 +22,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final premium = context.watch<PremiumProvider>();
+    final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundCream,
@@ -151,7 +152,7 @@ class SettingsScreen extends StatelessWidget {
           _SettingsCard(
             icon: Icons.share_rounded,
             title: 'Share',
-            subtitle: 'Share TajwidCoach with friends',
+            subtitle: 'Share Quran Pro with friends',
             onTap: () {
               // Direct OS native share sheet via share_plus
               importSharePlusAndShare(context);
@@ -199,6 +200,13 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 8),
 
           _SettingsCard(
+            icon: Icons.person_rounded,
+            title: 'Edit Name',
+            subtitle: (user?.name.isNotEmpty == true) ? user!.name : 'Tap to set your name',
+            onTap: () => _showEditNameDialog(context, user?.name ?? ''),
+          ),
+
+          _SettingsCard(
             icon: Icons.logout_rounded,
             title: 'Logout',
             subtitle: 'Sign out of your account',
@@ -222,8 +230,8 @@ class SettingsScreen extends StatelessWidget {
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
                     final versionText = snapshot.hasData
-                        ? 'TajwidCoach v${snapshot.data!.version}+${snapshot.data!.buildNumber} (Production)'
-                        : 'TajwidCoach v1.0.0+1 (Production)';
+                        ? 'Quran Pro v${snapshot.data!.version}'
+                        : 'Quran Pro v1.0.0';
                     return Text(
                       versionText,
                       style: TextStyle(
@@ -281,6 +289,40 @@ class SettingsScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _TranslationPickerSheet(settings: settings),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            hintText: 'Enter your name',
+            prefixIcon: Icon(Icons.person_outline_rounded),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              await context.read<AuthProvider>().updateProfile(name: name);
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
   }
 
