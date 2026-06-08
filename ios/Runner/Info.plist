@@ -18,7 +18,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Tajwid Coach</string>
+	<string>Quran Pro: Tajwid AI</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -77,9 +77,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>GADApplicationID</key>
+	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>TajwidCoach requires microphone access to record and analyze your Quran recitation for Tajwid feedback.</string>
+	<string>Quran Pro: Tajwid AI requires microphone access to record and analyze your Quran recitation for Tajwid feedback.</string>
 </dict>
 </plist>

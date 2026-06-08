@@ -245,7 +245,7 @@ class IjazahCertificateScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                'TajwidCoach',
+                                'Quran Pro',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppTheme.primaryGreen,

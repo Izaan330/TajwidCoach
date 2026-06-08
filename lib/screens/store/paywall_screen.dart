@@ -625,7 +625,7 @@ class _AnimatedHero extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'TajwidCoach',
+                  'Quran Pro: Tajwid AI',
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

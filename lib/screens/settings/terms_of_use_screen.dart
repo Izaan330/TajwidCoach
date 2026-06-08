@@ -34,7 +34,7 @@ class TermsOfUseScreen extends StatelessWidget {
             const SizedBox(height: 32),
             _buildSection(
               '1. Acceptance of Terms',
-              'By accessing or using TajwidCoach, you agree to be bound by these Terms of Use and all applicable laws and regulations.',
+              'By accessing or using Quran Pro: Tajwid AI, you agree to be bound by these Terms of Use and all applicable laws and regulations.',
             ),
             _buildSection(
               '2. License to Use',
@@ -42,16 +42,16 @@ class TermsOfUseScreen extends StatelessWidget {
             ),
             _buildSection(
               '3. Notice and Takedown Policy (DMCA)',
-              'TajwidCoach respects the intellectual property rights of others. We source Quranic recitations from public repositories (such as Islamic.Network and EveryAyah.com).\n\nIf you believe that any content in the app infringes upon your copyright, please submit a notice to our designated agent at support@tajwidcoach.ai with the following information:\n\n• Identification of the copyrighted work claimed to have been infringed.\n• Identification of the material that is claimed to be infringing.\n• Your contact information (address, phone number, and email).\n• A statement that you have a good faith belief that use of the material is not authorized.\n• A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner.',
+              'Quran Pro: Tajwid AI respects the intellectual property rights of others. We source Quranic recitations from public repositories (such as Islamic.Network and EveryAyah.com).\n\nIf you believe that any content in the app infringes upon your copyright, please submit a notice to our designated agent at support@quranpro.ai with the following information:\n\n• Identification of the copyrighted work claimed to have been infringed.\n• Identification of the material that is claimed to be infringing.\n• Your contact information (address, phone number, and email).\n• A statement that you have a good faith belief that use of the material is not authorized.\n• A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner.',
             ),
             _buildSection(
               '4. Prohibited Conduct',
-              'You agree not to attempt to decompile, reverse engineer, or extract the source code or proprietary AI models of TajwidCoach.',
+              'You agree not to attempt to decompile, reverse engineer, or extract the source code or proprietary AI models of Quran Pro: Tajwid AI.',
             ),
             const SizedBox(height: 48),
             const Center(
               child: Text(
-                'For legal inquiries, contact us at:\nsupport@tajwidcoach.ai',
+                'For legal inquiries, contact us at:\nsupport@quranpro.ai',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary),
               ),

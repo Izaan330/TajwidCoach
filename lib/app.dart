@@ -22,7 +22,7 @@ class TajwidCoachApp extends StatelessWidget {
       designSize: const Size(392, 800),
       minTextAdapt: true,
       builder: (context, child) => MaterialApp(
-        title: 'Quran Pro',
+        title: 'Quran Pro: Tajwid AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const AuthWrapper(),

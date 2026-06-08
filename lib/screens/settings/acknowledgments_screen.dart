@@ -41,7 +41,7 @@ class AcknowledgmentsScreen extends StatelessWidget {
           const Divider(height: 64),
           _buildSection(
             'Data & Infrastructure',
-            'TajwidCoach is built upon the incredible work of the open-source Islamic tech community. We are grateful for the APIs and datasets provided by:',
+            'Quran Pro: Tajwid AI is built upon the incredible work of the open-source Islamic tech community. We are grateful for the APIs and datasets provided by:',
             [
               'Islamic.Network (AlQuran.cloud) — Audio CDN & API',
               'Quran.com — Text & Translation data',
@@ -83,7 +83,7 @@ class AcknowledgmentsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          'TajwidCoach is a collaborative effort of modern technology and centuries of Islamic scholarship. We stand on the shoulders of giants.',
+          'Quran Pro: Tajwid AI is a collaborative effort of modern technology and centuries of Islamic scholarship. We stand on the shoulders of giants.',
           style: TextStyle(
             fontSize: 15,
             color: AppTheme.textSecondary,
@@ -163,7 +163,7 @@ class AcknowledgmentsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'If you are a rights holder for any content used in this app and believe it has been used inappropriately, please contact us at support@tajwidcoach.app. We respect all intellectual property and will promptly address your concerns.',
+            'If you are a rights holder for any content used in this app and believe it has been used inappropriately, please contact us at support@quranpro.ai. We respect all intellectual property and will promptly address your concerns.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,

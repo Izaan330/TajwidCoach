@@ -110,7 +110,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Help Us Improve TajwidCoach',
+                'Help Us Improve Quran Pro: Tajwid AI',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,

@@ -977,8 +977,8 @@ void importSharePlusAndShare(BuildContext context) {
   final box = context.findRenderObject() as RenderBox?;
   
   Share.share(
-    'Assalamu Alaikum! Join me in using TajwidCoach to learn and master Quranic Tajweed with real-time AI audio feedback. 📖🎤 Download now and let\'s build our daily Quran habits together! https://tajwidcoach.app',
-    subject: 'TajwidCoach App - Learn Quranic Tajweed',
+    'Assalamu Alaikum! Join me in using Quran Pro: Tajwid AI to learn and master Quranic Tajweed with real-time AI audio feedback. 📖🎤 Download now and let\'s build our daily Quran habits together! https://quranpro.ai',
+    subject: 'Quran Pro: Tajwid AI - Learn Quranic Tajweed',
     sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
   );
 }

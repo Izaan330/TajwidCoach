@@ -373,13 +373,22 @@ class PremiumProvider extends ChangeNotifier {
   }
 
   void _updateFromCustomerInfo(CustomerInfo customerInfo) {
-    final entitlement = customerInfo.entitlements.all["Tajwid Coach Pro"];
+    debugPrint('PremiumProvider: _updateFromCustomerInfo called');
+    debugPrint('PremiumProvider: All entitlements: ${customerInfo.entitlements.all}');
+    
+    final entitlement = customerInfo.entitlements.all["Quran Pro: Tajwid AI"];
+    debugPrint('PremiumProvider: "Quran Pro: Tajwid AI" entitlement = ${entitlement?.toString()}');
+    debugPrint('PremiumProvider: isActive = ${entitlement?.isActive}');
+    debugPrint('PremiumProvider: productIdentifier = ${entitlement?.productIdentifier}');
+    
     if (entitlement?.isActive == true) {
       _currentPlanId = entitlement?.productIdentifier ?? 'yearly';
       _tier = _tierFromPlanId(_currentPlanId);
+      debugPrint('PremiumProvider: Premium ACTIVE — tier=$_tier, planId=$_currentPlanId');
     } else {
       _tier = PremiumTier.free;
       _currentPlanId = 'free';
+      debugPrint('PremiumProvider: Premium INACTIVE — free tier');
     }
     notifyListeners();
   }
@@ -477,6 +486,7 @@ class PremiumProvider extends ChangeNotifier {
   // ─── Purchase ─────────────────────────────────────────────────────────────
 
   Future<void> purchasePlan(String planId) async {
+    debugPrint('PremiumProvider: purchasePlan("$planId") called. isConfigured=${RevenueCatService.isConfigured}');
     _isLoading = true;
     notifyListeners();
 
@@ -530,6 +540,7 @@ class PremiumProvider extends ChangeNotifier {
   }
 
   Future<void> restorePurchases() async {
+    debugPrint('PremiumProvider: restorePurchases() called. isConfigured=${RevenueCatService.isConfigured}');
     _isLoading = true;
     notifyListeners();
 

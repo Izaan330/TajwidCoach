@@ -261,9 +261,9 @@ class _AuthScreenState extends State<AuthScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          'TajwidCoach',
+          'Quran Pro: Tajwid AI',
           style: GoogleFonts.outfit(
-            fontSize: 34,
+            fontSize: 28,
             fontWeight: FontWeight.w800,
             color: Colors.white,
             letterSpacing: -0.5,

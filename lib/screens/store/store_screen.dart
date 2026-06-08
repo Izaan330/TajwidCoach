@@ -41,7 +41,7 @@ class StoreScreen extends StatelessWidget {
                   const Icon(Icons.workspace_premium_rounded, color: AppTheme.premiumGold, size: 54),
                   const SizedBox(height: 12),
                   const Text(
-                    'TajwidCoach Premium',
+                    'Quran Pro: Tajwid AI Premium',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
