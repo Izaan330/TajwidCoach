@@ -399,6 +399,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateProfile({required String name}) async {
+    if (_user == null) return;
+    _setLoading(true);
+    try {
+      if (isFirebaseAvailable && _firestore != null) {
+        await _firestore!
+            .collection('users')
+            .doc(_user!.uid)
+            .set({'name': name}, SetOptions(merge: true));
+        if (_user!.isSheikh) {
+          await _firestore!
+              .collection('sheikhs')
+              .doc(_user!.uid)
+              .set({'name': name}, SetOptions(merge: true));
+        }
+      }
+      _user = _user!.copyWith(name: name);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (_user!.phone.isNotEmpty) {
+          await prefs.setString('mock_user_phone_${_user!.phone}', jsonEncode(_user!.toMap()));
+        }
+        if (_user!.email != null && _user!.email!.isNotEmpty) {
+          await prefs.setString('mock_user_email_${_user!.email}', jsonEncode(_user!.toMap()));
+        }
+      } catch (e) {
+        debugPrint('Error saving mock user details: $e');
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   void updateUser(UserModel updated) {
     _user = updated;
     notifyListeners();
