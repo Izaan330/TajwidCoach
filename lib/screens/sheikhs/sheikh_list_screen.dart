@@ -5,7 +5,6 @@ import '../../providers/premium_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../models/sheikh_model.dart';
 import '../../providers/sheikh_provider.dart';
-import '../store/paywall_screen.dart';
 import 'sheikh_profile_screen.dart';
 import 'sheikh_dashboard_screen.dart';
 import 'sheikh_onboarding_screen.dart';
@@ -156,26 +155,17 @@ class _SheikhListScreenState extends State<SheikhListScreen> {
                 }
 
                 final sheikhIndex = !isSheikh ? index - 1 : index;
-                final premium = context.watch<PremiumProvider>();
                 final sheikh = filtered[sheikhIndex];
 
                 return _SheikhCard(
                   sheikh: sheikh,
                   onTap: () {
-                    if (premium.isPremium) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              SheikhProfileScreen(sheikh: filtered[index]),
-                        ),
-                      );
-                    } else {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PaywallScreen(),
-                        ),
-                      );
-                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SheikhProfileScreen(sheikh: sheikh),
+                      ),
+                    );
                   },
                 );
               },
@@ -195,6 +185,10 @@ class _SheikhCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final isAssigned = auth.user?.sheikhId == sheikh.id;
+    final premium = context.watch<PremiumProvider>();
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -402,11 +396,22 @@ class _SheikhCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: sheikh.isAvailable ? onTap : null,
+                  onPressed: (sheikh.isAvailable || isAssigned) ? onTap : null,
+                  style: isAssigned
+                      ? ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          foregroundColor: AppTheme.primaryGreen,
+                          elevation: 0,
+                        )
+                      : null,
                   child: Text(
-                    sheikh.isAvailable
-                        ? 'Book Session — ₹${sheikh.pricePerSession}'
-                        : 'Join Waitlist',
+                    isAssigned
+                        ? 'Active Mentor'
+                        : (sheikh.isAvailable
+                            ? (premium.isPremium
+                                ? 'Book Session — ₹${premium.getEffectiveSessionPrice(sheikh.pricePerSession)} (15% Premium Discount)'
+                                : 'Book Session — ₹${sheikh.pricePerSession}')
+                            : 'Join Waitlist'),
                   ),
                 ),
               ),

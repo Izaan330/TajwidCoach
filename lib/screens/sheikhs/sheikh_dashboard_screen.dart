@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/sheikh_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -313,6 +317,77 @@ class _ReviewCard extends StatefulWidget {
 
 class _ReviewCardState extends State<_ReviewCard> {
   final TextEditingController _feedbackController = TextEditingController();
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  Timer? _timer;
+  bool _isRecordingFeedback = false;
+  int _recordingFeedbackSeconds = 0;
+  String? _recordedFeedbackPath;
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _feedbackController.dispose();
+    _timer?.cancel();
+    _audioRecorder.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    if (await _audioRecorder.hasPermission()) {
+      final Directory tempDir = await getTemporaryDirectory();
+      final String path = '${tempDir.path}/feedback_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      const config = RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        sampleRate: 44100,
+        numChannels: 1,
+      );
+
+      await _audioRecorder.start(config, path: path);
+
+      setState(() {
+        _isRecordingFeedback = true;
+        _recordingFeedbackSeconds = 0;
+        _recordedFeedbackPath = null;
+      });
+
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        setState(() => _recordingFeedbackSeconds++);
+      });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission required')),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    _timer?.cancel();
+    final path = await _audioRecorder.stop();
+    setState(() {
+      _isRecordingFeedback = false;
+      _recordedFeedbackPath = path;
+    });
+  }
+
+  void _deleteRecording() {
+    if (_recordedFeedbackPath != null) {
+      final file = File(_recordedFeedbackPath!);
+      if (file.existsSync()) {
+        try {
+          file.deleteSync();
+        } catch (e) {
+          debugPrint('Error deleting local feedback file: $e');
+        }
+      }
+    }
+    setState(() {
+      _recordedFeedbackPath = null;
+      _recordingFeedbackSeconds = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -372,49 +447,145 @@ class _ReviewCardState extends State<_ReviewCard> {
               maxLines: 2,
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _submit(false),
-                    style:
-                        OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Needs Work'),
-                  ),
+            _buildAudioFeedbackUI(),
+            const SizedBox(height: 12),
+            if (_isSubmitting)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: CircularProgressIndicator(),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _submit(true),
-                    child: const Text('Approve'),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _submit(false),
+                      style:
+                          OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Needs Work'),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _submit(true),
+                      child: const Text('Approve'),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildAudioFeedbackUI() {
+    if (_isRecordingFeedback) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const _BlinkingRedDot(),
+                const SizedBox(width: 8),
+                Text(
+                  'Recording feedback: ${_formatSeconds(_recordingFeedbackSeconds)}',
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.stop, color: Colors.red),
+              onPressed: _stopRecording,
+            ),
+          ],
+        ),
+      );
+    } else if (_recordedFeedbackPath != null) {
+      return Row(
+        children: [
+          Expanded(
+            child: _AudioPlayerWidget(audioUrl: _recordedFeedbackPath!),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _deleteRecording,
+          ),
+        ],
+      );
+    } else {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _startRecording,
+          icon: const Icon(Icons.mic, color: AppTheme.primaryGreen),
+          label: const Text(
+            'Record Audio Feedback',
+            style: TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppTheme.primaryGreen),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      );
+    }
+  }
+
+  String _formatSeconds(int seconds) {
+    final mins = (seconds ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+
   void _submit(bool approved) async {
-    if (_feedbackController.text.isEmpty) {
+    final text = _feedbackController.text.trim();
+    if (text.isEmpty && _recordedFeedbackPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add feedback first')),
+        const SnackBar(content: Text('Please add text feedback or record audio feedback first')),
       );
       return;
     }
 
-    await context.read<SheikhProvider>().submitFeedback(
-          widget.review.id,
-          _feedbackController.text,
-          approved,
-        );
+    setState(() => _isSubmitting = true);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(approved ? 'Approved!' : 'Feedback sent')),
-      );
+    try {
+      final sheikhId = context.read<AuthProvider>().user?.uid;
+      await context.read<SheikhProvider>().submitFeedback(
+            widget.review.id,
+            text,
+            approved,
+            feedbackAudioPath: _recordedFeedbackPath,
+            sheikhId: sheikhId,
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(approved ? 'Approved!' : 'Feedback sent')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit feedback: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -424,6 +595,48 @@ class _ReviewCardState extends State<_ReviewCard> {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+}
+
+class _BlinkingRedDot extends StatefulWidget {
+  const _BlinkingRedDot();
+
+  @override
+  State<_BlinkingRedDot> createState() => _BlinkingRedDotState();
+}
+
+class _BlinkingRedDotState extends State<_BlinkingRedDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _controller,
+      child: Container(
+        width: 12,
+        height: 12,
+        decoration: const BoxDecoration(
+          color: Colors.red,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
   }
 }
 
@@ -445,22 +658,34 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
   void initState() {
     super.initState();
     _player = AudioPlayer();
+    _player.durationStream.listen((d) {
+      if (mounted) setState(() => _duration = d ?? Duration.zero);
+    });
+    _player.positionStream.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+    _player.playerStateStream.listen((state) {
+      if (mounted) setState(() => _isPlaying = state.playing);
+    });
     _init();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audioUrl != widget.audioUrl) {
+      _init();
+    }
   }
 
   Future<void> _init() async {
     if (widget.audioUrl.isEmpty) return;
     try {
-      await _player.setUrl(widget.audioUrl);
-      _player.durationStream.listen((d) {
-        if (mounted) setState(() => _duration = d ?? Duration.zero);
-      });
-      _player.positionStream.listen((p) {
-        if (mounted) setState(() => _position = p);
-      });
-      _player.playerStateStream.listen((state) {
-        if (mounted) setState(() => _isPlaying = state.playing);
-      });
+      if (widget.audioUrl.startsWith('/') || widget.audioUrl.startsWith('file:///')) {
+        await _player.setFilePath(widget.audioUrl.replaceFirst('file://', ''));
+      } else {
+        await _player.setUrl(widget.audioUrl);
+      }
     } catch (e) {
       debugPrint("Error loading audio: $e");
     }

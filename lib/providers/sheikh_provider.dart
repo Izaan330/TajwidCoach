@@ -21,7 +21,7 @@ class SheikhProvider extends ChangeNotifier {
 
   StreamSubscription<DocumentSnapshot>? _currentSheikhSubscription;
   StreamSubscription<List<RecordingModel>>? _pendingReviewsSubscription;
-  StreamSubscription<List<String>>? _myStudentsSubscription;
+  StreamSubscription<List<Map<String, dynamic>>>? _myStudentsSubscription;
 
   List<SheikhModel> get availableSheikhs => _availableSheikhs;
   SheikhModel? get currentSheikh => _currentSheikh;
@@ -171,34 +171,37 @@ class SheikhProvider extends ChangeNotifier {
   /// Listen for assigned students and fetch their profiles.
   void listenToMyStudents(String sheikhId) {
     _myStudentsSubscription?.cancel();
-    _myStudentsSubscription = _service.getSheikhStudentUids(sheikhId).listen((uids) async {
-      _myStudentUids = uids;
-      
-      // Fetch missing profiles
-      for (final uid in uids) {
-        if (!_studentProfiles.containsKey(uid)) {
-          _fetchStudentProfile(uid);
+    _myStudentsSubscription = _service.getSheikhStudentProfiles(sheikhId).listen((profilesData) {
+      final List<String> uids = [];
+      for (final data in profilesData) {
+        final uid = data['uid'] ?? '';
+        if (uid.isNotEmpty) {
+          uids.add(uid);
+          try {
+            _studentProfiles[uid] = UserModel.fromMap(data);
+          } catch (e) {
+            debugPrint('Error parsing student profile for $uid: $e');
+            _studentProfiles[uid] = UserModel(
+              uid: uid,
+              name: data['name'] ?? 'Unknown Student ($uid)',
+              phone: data['phone'] ?? '',
+            );
+          }
         }
       }
+      _myStudentUids = uids;
       notifyListeners();
+    }, onError: (e) {
+      debugPrint('Error listening to my students: $e');
     });
   }
 
-  Future<void> _fetchStudentProfile(String uid) async {
-    if (_firestore == null) return;
-    try {
-      final doc = await _firestore!.collection('users').doc(uid).get();
-      if (doc.exists) {
-        _studentProfiles[uid] = UserModel.fromMap(doc.data()!);
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error fetching student profile: $e');
+  Future<void> submitFeedback(String recordingId, String feedback, bool approved, {String? feedbackAudioPath, String? sheikhId}) async {
+    String? audioUrl;
+    if (feedbackAudioPath != null && sheikhId != null) {
+      audioUrl = await _service.uploadFeedbackAudioFile(feedbackAudioPath, sheikhId);
     }
-  }
-
-  Future<void> submitFeedback(String recordingId, String feedback, bool approved) async {
-    await _service.submitFeedback(recordingId, feedback, approved);
+    await _service.submitFeedback(recordingId, feedback, approved, feedbackAudioUrl: audioUrl);
   }
 
   Future<void> submitRequest(RecordingModel recording) async {
@@ -268,8 +271,10 @@ class SheikhProvider extends ChangeNotifier {
       throw Exception('This Sheikh has reached their student limit. Try a Sheikh Pro or Madrasa!');
     }
 
-    // 1. Update user's sheikhId
-    await _firestore!.collection('users').doc(userId).update({'sheikhId': sheikhId});
+    // 1. Update user's sheikhId (using set with merge to handle cases where user document doesn't exist yet)
+    await _firestore!.collection('users').doc(userId).set({
+      'sheikhId': sheikhId,
+    }, SetOptions(merge: true));
     
     // 2. Add student to sheikh's list
     await _firestore!.collection('sheikhs').doc(sheikhId).update({
@@ -292,9 +297,9 @@ class SheikhProvider extends ChangeNotifier {
       'issuedDate': certificate.issuedDate.toIso8601String(),
     });
 
-    // 2. Award badge to student
-    await _firestore!.collection('users').doc(certificate.studentId).update({
+    // 2. Award badge to student (using set with merge to handle cases where user document doesn't exist yet)
+    await _firestore!.collection('users').doc(certificate.studentId).set({
       'badges': FieldValue.arrayUnion(['ijazah_${certificate.attestation.toLowerCase().replaceAll(' ', '_')}']),
-    });
+    }, SetOptions(merge: true));
   }
 }

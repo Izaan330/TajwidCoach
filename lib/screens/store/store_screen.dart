@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/premium_provider.dart';
 import '../../providers/streak_provider.dart';
 
-class StoreScreen extends StatelessWidget {
+class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
+
+  @override
+  State<StoreScreen> createState() => _StoreScreenState();
+}
+
+class _StoreScreenState extends State<StoreScreen> {
+  bool _isRestoring = false;
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +27,70 @@ class StoreScreen extends StatelessWidget {
         title: const Text('Upgrade'),
         actions: [
           TextButton(
-            onPressed: () => premiumProvider.restorePurchases(),
-            child: const Text('Restore'),
+            onPressed: (_isRestoring || isLoading)
+                ? null
+                : () async {
+                    setState(() => _isRestoring = true);
+                    try {
+                      final restored = await premiumProvider.restorePurchases();
+                      if (context.mounted) {
+                        if (restored) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Purchases restored successfully!'),
+                              backgroundColor: AppTheme.primaryGreen,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No active subscriptions found to restore.'),
+                              backgroundColor: AppTheme.qalqalahRed,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    } on PlatformException catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Restore failed: ${e.message ?? e.toString()}'),
+                            backgroundColor: AppTheme.qalqalahRed,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Restore failed: $e'),
+                            backgroundColor: AppTheme.qalqalahRed,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (context.mounted) {
+                        setState(() => _isRestoring = false);
+                      }
+                    }
+                  },
+            child: _isRestoring
+                ? const SizedBox(
+                    height: 14,
+                    width: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Restore',
+                    style: TextStyle(color: Colors.white),
+                  ),
           ),
         ],
       ),
@@ -119,7 +189,31 @@ class StoreScreen extends StatelessWidget {
                 isPurchased:
                     isPremium && premiumProvider.currentPlanId == plan.id,
                 isLoading: isLoading,
-                onPurchase: () => premiumProvider.purchasePlan(plan.id),
+                onPurchase: () async {
+                  try {
+                    await premiumProvider.purchasePlan(plan.id);
+                  } on PlatformException catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Purchase failed: ${e.message ?? e.toString()}'),
+                          backgroundColor: AppTheme.qalqalahRed,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Purchase failed: $e'),
+                          backgroundColor: AppTheme.qalqalahRed,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
               ),
             ),
 

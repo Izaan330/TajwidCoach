@@ -34,6 +34,9 @@ class TajwidAnalysisResult {
   final List<String> excellentRuleIds;
   final String encouragement;
   final int lockedRulesCount;
+  final bool isMismatch;
+  final String? recitedAyah;
+  final bool isMock;
 
   const TajwidAnalysisResult({
     required this.overallScore,
@@ -45,6 +48,9 @@ class TajwidAnalysisResult {
     required this.excellentRuleIds,
     required this.encouragement,
     this.lockedRulesCount = 0,
+    this.isMismatch = false,
+    this.recitedAyah,
+    this.isMock = false,
   });
 
   factory TajwidAnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -60,6 +66,9 @@ class TajwidAnalysisResult {
       excellentRuleIds: List<String>.from(json['excellent_rule_ids'] ?? []),
       encouragement: json['encouragement'] ?? '',
       lockedRulesCount: json['locked_rules_count'] ?? 0,
+      isMismatch: json['is_mismatch'] ?? false,
+      recitedAyah: json['recited_ayah'],
+      isMock: json['is_mock'] ?? false,
     );
   }
 
@@ -73,7 +82,12 @@ class TajwidAnalysisResult {
         'excellent_rule_ids': excellentRuleIds,
         'encouragement': encouragement,
         'locked_rules_count': lockedRulesCount,
+        'is_mismatch': isMismatch,
+        'recited_ayah': recitedAyah,
+        'is_mock': isMock,
       };
+
+
 
   String get letterGrade {
     if (overallScore >= 95) return 'A+';

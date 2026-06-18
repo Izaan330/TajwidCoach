@@ -63,17 +63,32 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _listenToUserDetails(String uid) {
-    _userSubscription = _firestore?.collection('users').doc(uid).snapshots().listen((doc) {
+    _userSubscription = _firestore?.collection('users').doc(uid).snapshots().listen((doc) async {
       if (doc.exists) {
         _user = UserModel.fromMap(doc.data()!);
+        _isAuthDetermined = true;
+        notifyListeners();
       } else {
         // Only set default if we don't have a user already (prevent overwriting local updates)
-        if (_user == null || _user?.name == 'Student' || _user?.name == 'Guest Student') {
-          _user = UserModel(uid: uid, name: 'Izaan', phone: '');
+        if (_user == null || _user?.name == 'Student' || _user?.name == 'Guest Student' || _user?.uid != uid) {
+          _user = UserModel(
+            uid: uid,
+            name: _auth?.currentUser?.displayName ?? 'Izaan',
+            phone: _auth?.currentUser?.phoneNumber ?? '',
+            email: _auth?.currentUser?.email,
+          );
         }
+        
+        // Lazily create the user document in Firestore so that updates on the document don't fail.
+        try {
+          await _firestore?.collection('users').doc(uid).set(_user!.toMap());
+        } catch (e) {
+          debugPrint('Error auto-creating user document in Firestore: $e');
+        }
+        
+        _isAuthDetermined = true;
+        notifyListeners();
       }
-      _isAuthDetermined = true;
-      notifyListeners();
     }, onError: (e) {
       debugPrint('Error listening to user details: $e');
       _isAuthDetermined = true;

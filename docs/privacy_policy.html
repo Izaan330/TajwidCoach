@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Tajwid Coach</title>
+    <meta name="description" content="Privacy Policy for Tajwid Coach - Understand how we collect, use, and protect your data to help you improve your Quranic recitation with AI feedback.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Theme Colors from Flutter App */
+            --primary-green: #00C853;
+            --primary-green-dark: #00963E;
+            --primary-green-light: #69F0AE;
+            --accent-amber: #FFB300;
+            --bg-dark: #080E1A;
+            --bg-mid: #0D1628;
+            --bg-surface: rgba(20, 31, 53, 0.65);
+            --bg-elevated: rgba(26, 39, 68, 0.8);
+            --text-primary: #F0F4FF;
+            --text-secondary: #8FA3C8;
+            --text-hint: #4A5A7A;
+            --divider: rgba(30, 45, 74, 0.6);
+            --glass-border: rgba(130, 177, 255, 0.15);
+            --glow-color: rgba(0, 200, 83, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glowing Background Orbs */
+        .glow-orb-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--glow-color) 0%, rgba(8, 14, 26, 0) 70%);
+            z-index: -1;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        .glow-orb-2 {
+            position: absolute;
+            bottom: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 179, 0, 0.08) 0%, rgba(8, 14, 26, 0) 70%);
+            z-index: -1;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        /* Container & Grid Setup */
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styling */
+        header {
+            margin-bottom: 48px;
+            text-align: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 24px;
+            color: #000;
+            box-shadow: 0 4px 20px rgba(0, 200, 83, 0.4);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* Content Layout */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            align-items: start;
+            flex-grow: 1;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: sticky;
+            top: 40px;
+            background: var(--bg-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sidebar-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-hint);
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-link {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            padding: 6px 0;
+            border-left: 2px solid transparent;
+            padding-left: 0;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-green-light);
+            padding-left: 8px;
+        }
+
+        .nav-link.active {
+            color: var(--primary-green);
+            font-weight: 600;
+            border-left-color: var(--primary-green);
+            padding-left: 10px;
+        }
+
+        /* Main Privacy Content (Glassmorphic Card) */
+        main.policy-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 48px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .last-updated {
+            font-size: 0.9rem;
+            color: var(--text-hint);
+            margin-bottom: 32px;
+            display: inline-block;
+            background: var(--bg-elevated);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 40px;
+            scroll-margin-top: 40px; /* Offset for smooth scroll */
+        }
+
+        section:last-of-type {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-green);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+
+        ul {
+            list-style: none;
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+
+        li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 6px;
+            color: var(--primary-green);
+            font-weight: bold;
+            font-size: 1.2rem;
+            top: -2px;
+        }
+
+        .contact-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 32px;
+            text-align: center;
+        }
+
+        .contact-box h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .contact-email {
+            color: var(--primary-green);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .contact-email:hover {
+            color: var(--primary-green-light);
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 48px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-hint);
+            border-top: 1px solid var(--divider);
+            padding-top: 24px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 850px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .sidebar {
+                position: static;
+                padding: 16px;
+            }
+
+            .nav-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px 16px;
+            }
+
+            .nav-link {
+                border-left: none;
+                border-bottom: 2px solid transparent;
+                padding-left: 0;
+                padding-bottom: 4px;
+            }
+
+            .nav-link:hover {
+                padding-left: 0;
+            }
+
+            .nav-link.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--primary-green);
+                padding-left: 0;
+            }
+
+            main.policy-card {
+                padding: 32px 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+
+    <div class="page-container">
+        
+        <header>
+            <div class="logo-container">
+                <div class="logo-icon">T</div>
+                <h1>Tajwid Coach</h1>
+            </div>
+            <p class="subtitle">AI-Powered Quranic Recitation Companion</p>
+        </header>
+
+        <div class="layout-grid">
+            
+            <aside class="sidebar">
+                <div class="sidebar-title">Table of Contents</div>
+                <ul class="nav-list">
+                    <li><a href="#collect" class="nav-link active" id="nav-collect">1. Information Collect</a></li>
+                    <li><a href="#use" class="nav-link" id="nav-use">2. How We Use It</a></li>
+                    <li><a href="#storage" class="nav-link" id="nav-storage">3. Storage & Security</a></li>
+                    <li><a href="#deletion" class="nav-link" id="nav-deletion">4. Account Deletion</a></li>
+                    <li><a href="#thirdparty" class="nav-link" id="nav-thirdparty">5. Third-Party Services</a></li>
+                    <li><a href="#contact" class="nav-link" id="nav-contact-link">6. Contact Support</a></li>
+                </ul>
+            </aside>
+
+            <main class="policy-card">
+                <span class="last-updated">Last Updated: April 29, 2026</span>
+                
+                <section id="collect">
+                    <h2>1. Information We Collect</h2>
+                    <p>We collect information you provide directly to us when you create an account, such as your name, email address, and phone number.</p>
+                    <p>In addition, to provide our core AI-powered Tajwid analysis and feedback, we collect and process audio recordings of your recitations when you use the practice features of the app.</p>
+                </section>
+
+                <hr style="border: 0; height: 1px; background: var(--divider); margin: 32px 0;">
+
+                <section id="use">
+                    <h2>2. How We Use Information</h2>
+                    <p>We use the information we collect for the following key purposes:</p>
+                    <ul>
+                        <li>Provide and improve our AI Tajwid analysis, helping you refine your pronunciation.</li>
+                        <li>Personalize your learning experience, including tracking practice streaks and progress.</li>
+                        <li>Process premium subscriptions and payments securely.</li>
+                        <li>Send important service notifications and streak reminders.</li>
+                    </ul>
+                </section>
+
+                <hr style="border: 0; height: 1px; background: var(--divider); margin: 32px 0;">
+
+                <section id="storage">
+                    <h2>3. Data Storage & Security</h2>
+                    <p>Your personal data and profile information are stored securely using Google Firebase.</p>
+                    <p>We implement industry-standard administrative, technical, and physical security measures to protect your personal information and audio recordings from unauthorized access, loss, or alteration.</p>
+                </section>
+
+                <hr style="border: 0; height: 1px; background: var(--divider); margin: 32px 0;">
+
+                <section id="deletion">
+                    <h2>4. Account Deletion</h2>
+                    <p>We respect your ownership of your data. You can delete your account and all associated personal data, progress, and recordings at any time directly through the Settings menu inside the Tajwid Coach app.</p>
+                    <p>Please note that this action is permanent and cannot be undone.</p>
+                </section>
+
+                <hr style="border: 0; height: 1px; background: var(--divider); margin: 32px 0;">
+
+                <section id="thirdparty">
+                    <h2>5. Third-Party Services</h2>
+                    <p>To deliver a seamless experience, we partner with reliable third-party service providers who assist us with key functions:</p>
+                    <ul>
+                        <li><strong>Google Firebase / Cloud Run:</strong> Infrastructure, authentication, database storage, and AI processing backend.</li>
+                        <li><strong>RevenueCat:</strong> Secure processing and management of in-app subscriptions and purchases.</li>
+                    </ul>
+                </section>
+
+                <hr style="border: 0; height: 1px; background: var(--divider); margin: 32px 0;">
+
+                <section id="contact">
+                    <h2>6. Contact Support</h2>
+                    <p>If you have any questions or concerns regarding this Privacy Policy or our data practices, please reach out to us:</p>
+                    <div class="contact-box">
+                        <h3>Customer Support Email</h3>
+                        <a href="mailto:support@quranpro.ai" class="contact-email" id="email-link">support@quranpro.ai</a>
+                    </div>
+                </section>
+            </main>
+
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Tajwid Coach. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+    <!-- Smooth Navigation Scroll Spy -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            // Smooth scrolling for navigation links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    if (targetSection) {
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Scroll spy to highlight current active section in navigation
+            window.addEventListener('scroll', function() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if scrolled past the section start, offset for visual balance
+                    if (window.pageYOffset >= sectionTop - 120) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

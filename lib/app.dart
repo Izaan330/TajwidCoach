@@ -128,7 +128,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 children: [
                   const Icon(Icons.ac_unit_rounded, color: Colors.white),
                   const SizedBox(width: 12),
-                  Text('Premium Reward: +$diff Streak Freezes added!'),
+                  Expanded(
+                    child: Text('Premium Reward: +$diff Streak Freezes added!'),
+                  ),
                 ],
               ),
               backgroundColor: AppTheme.info,
@@ -158,3 +160,5 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 }
+
+// Root application widget routing and global state configuration

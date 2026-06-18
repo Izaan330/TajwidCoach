@@ -247,7 +247,7 @@ class _HistoryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: recording.sheikhApproved 
                       ? Colors.green.withValues(alpha: 0.1) 
-                      : (recording.sheikhFeedback != null 
+                      : ((recording.sheikhFeedback != null || recording.sheikhFeedbackAudioUrl != null)
                           ? Colors.orange.withValues(alpha: 0.1) 
                           : Colors.grey.withValues(alpha: 0.1)),
                     borderRadius: BorderRadius.circular(12),
@@ -255,13 +255,13 @@ class _HistoryCard extends StatelessWidget {
                   child: Text(
                     recording.sheikhApproved 
                       ? 'Approved' 
-                      : (recording.sheikhFeedback != null ? 'Reviewed' : 'Pending'),
+                      : ((recording.sheikhFeedback != null || recording.sheikhFeedbackAudioUrl != null) ? 'Reviewed' : 'Pending'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: recording.sheikhApproved 
                         ? Colors.green 
-                        : (recording.sheikhFeedback != null ? Colors.orange : Colors.grey),
+                        : ((recording.sheikhFeedback != null || recording.sheikhFeedbackAudioUrl != null) ? Colors.orange : Colors.grey),
                     ),
                   ),
                 ),
@@ -274,7 +274,7 @@ class _HistoryCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _AudioPlayerWidget(audioUrl: recording.audioUrl ?? ''),
-            if (recording.sheikhFeedback != null) ...[
+            if (recording.sheikhFeedback != null || recording.sheikhFeedbackAudioUrl != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -289,7 +289,12 @@ class _HistoryCard extends StatelessWidget {
                   children: [
                     const Text('Your Feedback', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
                     const SizedBox(height: 4),
-                    Text(recording.sheikhFeedback!, style: const TextStyle(fontSize: 14)),
+                    if (recording.sheikhFeedback != null && recording.sheikhFeedback!.isNotEmpty) ...[
+                      Text(recording.sheikhFeedback!, style: const TextStyle(fontSize: 14)),
+                      if (recording.sheikhFeedbackAudioUrl != null) const SizedBox(height: 8),
+                    ],
+                    if (recording.sheikhFeedbackAudioUrl != null)
+                      _AudioPlayerWidget(audioUrl: recording.sheikhFeedbackAudioUrl!),
                   ],
                 ),
               ),
@@ -335,22 +340,34 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
   void initState() {
     super.initState();
     _player = AudioPlayer();
+    _player.durationStream.listen((d) {
+      if (mounted) setState(() => _duration = d ?? Duration.zero);
+    });
+    _player.positionStream.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+    _player.playerStateStream.listen((state) {
+      if (mounted) setState(() => _isPlaying = state.playing);
+    });
     _init();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audioUrl != widget.audioUrl) {
+      _init();
+    }
   }
 
   Future<void> _init() async {
     if (widget.audioUrl.isEmpty) return;
     try {
-      await _player.setUrl(widget.audioUrl);
-      _player.durationStream.listen((d) {
-        if (mounted) setState(() => _duration = d ?? Duration.zero);
-      });
-      _player.positionStream.listen((p) {
-        if (mounted) setState(() => _position = p);
-      });
-      _player.playerStateStream.listen((state) {
-        if (mounted) setState(() => _isPlaying = state.playing);
-      });
+      if (widget.audioUrl.startsWith('/') || widget.audioUrl.startsWith('file:///')) {
+        await _player.setFilePath(widget.audioUrl.replaceFirst('file://', ''));
+      } else {
+        await _player.setUrl(widget.audioUrl);
+      }
     } catch (e) {
       debugPrint("Error loading audio: $e");
     }

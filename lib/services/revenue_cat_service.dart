@@ -10,6 +10,40 @@ class RevenueCatService {
   // Google key — real production key for Google Play.
   static const _googleApiKey = 'goog_gKFpeWooMyawuXRMVpTSfuPBDuV';
 
+  // Mapping internal plan IDs to store product IDs
+  static const Map<String, String> _planToStoreProductId = {
+    'monthly': 'tajwidcoach_premium_individual:individual-monthly',
+    'yearly': 'tajwidcoach_premium_individual:individual-yearly',
+    'family_monthly': 'tajwidcoach_premium_family:family-monthly',
+    'family_yearly': 'tajwidcoach_premium_family:family-yearly',
+    'lifetime': 'tajwidcoach_premium_lifetime',
+    'monthly_2': 'tajwidcoach_sheikh_pro:sheikh-monthly',
+    'credits_100': 'tajwidcoach_credits_100',
+    'credits_500': 'tajwidcoach_credits_500',
+    'credits_1000': 'tajwidcoach_credits_1000',
+  };
+
+  // Mapping internal plan IDs to RevenueCat package IDs
+  static const Map<String, String> _planToPackageId = {
+    'monthly': 'individual_monthly_premium',
+    'yearly': 'individual_yearly_premium',
+    'family_monthly': 'family_monthly_premium',
+    'family_yearly': 'family_yearly_premium',
+    'lifetime': 'individual_lifetime_premium',
+    'monthly_2': 'sheikh_monthly_premium',
+    'credits_100': 'sheikh_credits_100',
+    'credits_500': 'sheikh_credits_500',
+    'credits_1000': 'sheikh_credits_1000',
+  };
+
+  static String mapPlanIdToStoreProductId(String planId) {
+    return _planToStoreProductId[planId] ?? planId;
+  }
+
+  static String mapPlanIdToPackageId(String planId) {
+    return _planToPackageId[planId] ?? planId;
+  }
+
   static bool get _isGoogleKeyReal =>
       _googleApiKey.isNotEmpty &&
       _googleApiKey != 'goog_api_key_here' &&
@@ -85,31 +119,42 @@ class RevenueCatService {
 
   static Future<CustomerInfo?> purchasePlan(String planId) async {
     try {
-      debugPrint('RevenueCat: Attempting purchase for plan "$planId"');
+      final storeProductId = mapPlanIdToStoreProductId(planId);
+      final packageId = mapPlanIdToPackageId(planId);
+      debugPrint('RevenueCat: Attempting purchase for plan "$planId" (Store Product ID: "$storeProductId", Package ID: "$packageId")');
+      
       final offerings = await Purchases.getOfferings();
-      debugPrint('RevenueCat: Current offering = ${offerings.current?.identifier}');
-      debugPrint('RevenueCat: Available packages = ${offerings.current?.availablePackages.map((p) => p.storeProduct.identifier).toList()}');
+      // Use current offering or fallback to tajwid_ai_offering
+      final offering = offerings.current ?? offerings.all['tajwid_ai_offering'];
+      debugPrint('RevenueCat: Using offering = ${offering?.identifier}');
+      if (offering != null) {
+        debugPrint('RevenueCat: Available packages = ${offering.availablePackages.map((p) => p.identifier).toList()}');
+      }
 
-      if (offerings.current != null) {
-        final package = offerings.current!.availablePackages.firstWhere(
-          (pkg) => pkg.storeProduct.identifier == planId,
-          orElse: () => offerings.current!.availablePackages.first,
+      if (offering != null && offering.availablePackages.isNotEmpty) {
+        final matchingPackages = offering.availablePackages.where(
+          (pkg) => pkg.identifier == packageId || pkg.storeProduct.identifier == storeProductId || pkg.identifier == planId,
         );
-        debugPrint('RevenueCat: Purchasing package "${package.storeProduct.identifier}" (${package.storeProduct.title})');
-        final result =
-            await Purchases.purchase(PurchaseParams.package(package));
-        debugPrint('RevenueCat: Purchase successful. Entitlements: ${result.customerInfo.entitlements.all}');
-        return result.customerInfo;
-      } else {
-        debugPrint('RevenueCat: No current offering, falling back to getProducts');
-        final products = await Purchases.getProducts([planId]);
-        debugPrint('RevenueCat: Found ${products.length} products for "$planId"');
-        if (products.isNotEmpty) {
-          final result = await Purchases.purchase(
-              PurchaseParams.storeProduct(products.first));
+        if (matchingPackages.isNotEmpty) {
+          final package = matchingPackages.first;
+          debugPrint('RevenueCat: Purchasing package "${package.identifier}" (Store Product: "${package.storeProduct.identifier}")');
+          final result =
+              await Purchases.purchase(PurchaseParams.package(package));
           debugPrint('RevenueCat: Purchase successful. Entitlements: ${result.customerInfo.entitlements.all}');
           return result.customerInfo;
         }
+      }
+
+      debugPrint('RevenueCat: Matching package not found in current offering. Falling back to store product search for "$storeProductId"');
+      final products = await Purchases.getProducts([storeProductId]);
+      debugPrint('RevenueCat: Found ${products.length} products for "$storeProductId"');
+      if (products.isNotEmpty) {
+        final result = await Purchases.purchase(
+            PurchaseParams.storeProduct(products.first));
+        debugPrint('RevenueCat: Purchase successful. Entitlements: ${result.customerInfo.entitlements.all}');
+        return result.customerInfo;
+      } else {
+        throw Exception('Product "$storeProductId" not found on the store.');
       }
     } catch (e) {
       final msg = e.toString();
@@ -122,7 +167,6 @@ class RevenueCatService {
       }
       rethrow;
     }
-    return null;
   }
 
   static Future<CustomerInfo?> restorePurchases() async {

@@ -82,6 +82,7 @@ class PremiumProvider extends ChangeNotifier {
     
     if (uid == null) {
       try {
+        await _initRevenueCat();
         if (RevenueCatService.isConfigured) {
           await RevenueCatService.logOut();
         } else {
@@ -105,6 +106,7 @@ class PremiumProvider extends ChangeNotifier {
 
     try {
       // 1. RevenueCat Sync
+      await _initRevenueCat();
       if (RevenueCatService.isConfigured) {
         await RevenueCatService.logIn(uid);
         final customerInfo = await RevenueCatService.getCustomerInfo();
@@ -214,9 +216,9 @@ class PremiumProvider extends ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
       });
       
-      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
+      await FirebaseFirestore.instance.collection('users').doc(_userId).set({
         'familyCode': code,
-      });
+      }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Error generating family code: $e');
     }
@@ -244,9 +246,9 @@ class PremiumProvider extends ChangeNotifier {
         });
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
+      await FirebaseFirestore.instance.collection('users').doc(_userId).set({
         'familyCode': code,
-      });
+      }, SetOptions(merge: true));
 
       _familyCode = code;
       _tier = PremiumTier.family; // User gets family benefits
@@ -342,11 +344,22 @@ class PremiumProvider extends ChangeNotifier {
     _initRevenueCat();
   }
 
-  Future<void> _initRevenueCat() async {
-    if (RevenueCatService.isConfigured) {
-      await RevenueCatService.init();
-      _checkStatus();
-    } else {
+  Future<void>? _initFuture;
+
+  Future<void> _initRevenueCat() {
+    _initFuture ??= _doInitRevenueCat();
+    return _initFuture!;
+  }
+
+  Future<void> _doInitRevenueCat() async {
+    try {
+      if (RevenueCatService.isConfigured) {
+        await RevenueCatService.init();
+      } else {
+        await _loadLocalMockStatus();
+      }
+    } catch (e) {
+      debugPrint('RevenueCat initialization error: $e');
       await _loadLocalMockStatus();
     }
   }
@@ -363,28 +376,28 @@ class PremiumProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _checkStatus() async {
-    if (!RevenueCatService.isConfigured) return;
-    
-    final customerInfo = await RevenueCatService.getCustomerInfo();
-    if (customerInfo != null) {
-      _updateFromCustomerInfo(customerInfo);
-    }
-  }
+
 
   void _updateFromCustomerInfo(CustomerInfo customerInfo) {
     debugPrint('PremiumProvider: _updateFromCustomerInfo called');
     debugPrint('PremiumProvider: All entitlements: ${customerInfo.entitlements.all}');
     
-    final entitlement = customerInfo.entitlements.all["Quran Pro: Tajwid AI"];
-    debugPrint('PremiumProvider: "Quran Pro: Tajwid AI" entitlement = ${entitlement?.toString()}');
+    // Look up entitlement checking both possible keys, with a fallback to any active entitlement
+    final entitlement = customerInfo.entitlements.all["Quran Pro: Tajwid AI"] ??
+        customerInfo.entitlements.all["premium"] ??
+        (customerInfo.entitlements.active.isNotEmpty
+            ? customerInfo.entitlements.active.values.first
+            : null);
+
+    debugPrint('PremiumProvider: Entitlement = ${entitlement?.toString()}');
     debugPrint('PremiumProvider: isActive = ${entitlement?.isActive}');
     debugPrint('PremiumProvider: productIdentifier = ${entitlement?.productIdentifier}');
     
     if (entitlement?.isActive == true) {
-      _currentPlanId = entitlement?.productIdentifier ?? 'yearly';
+      final storeProductId = entitlement?.productIdentifier ?? 'tajwidcoach_premium_yearly';
+      _currentPlanId = _storeProductIdToPlanId(storeProductId);
       _tier = _tierFromPlanId(_currentPlanId);
-      debugPrint('PremiumProvider: Premium ACTIVE — tier=$_tier, planId=$_currentPlanId');
+      debugPrint('PremiumProvider: Premium ACTIVE — tier=$_tier, planId=$_currentPlanId (Store Product ID: $storeProductId)');
     } else {
       _tier = PremiumTier.free;
       _currentPlanId = 'free';
@@ -393,16 +406,48 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String _storeProductIdToPlanId(String storeProductId) {
+    if (storeProductId.contains('individual-yearly')) {
+      return 'yearly';
+    }
+    if (storeProductId.contains('individual-monthly')) {
+      return 'monthly';
+    }
+    if (storeProductId.contains('family-yearly')) {
+      return 'family_yearly';
+    }
+    if (storeProductId.contains('family-monthly')) {
+      return 'family_monthly';
+    }
+    switch (storeProductId) {
+      case 'tajwidcoach_premium_yearly':
+        return 'yearly';
+      case 'tajwidcoach_premium_family':
+        return 'family_yearly';
+      case 'tajwidcoach_premium_lifetime':
+        return 'lifetime';
+      case 'tajwidcoach_sheikh_pro':
+        return 'monthly_2';
+      default:
+        return storeProductId;
+    }
+  }
+
   PremiumTier _tierFromPlanId(String planId) {
     switch (planId) {
       case 'yearly':
       case 'monthly':
+      case 'tajwidcoach_premium_yearly':
         return PremiumTier.premium;
       case 'family_yearly':
+      case 'family_monthly':
+      case 'tajwidcoach_premium_family':
         return PremiumTier.family;
       case 'lifetime':
+      case 'tajwidcoach_premium_lifetime':
         return PremiumTier.lifetime;
       case 'monthly_2':
+      case 'tajwidcoach_sheikh_pro':
         return PremiumTier.sheikhPro;
       default:
         return PremiumTier.premium;
@@ -413,12 +458,32 @@ class PremiumProvider extends ChangeNotifier {
 
   static const List<PremiumPlan> plans = [
     PremiumPlan(
+      id: 'monthly',
+      name: 'Premium Monthly',
+      price: '₹29',
+      period: '/month',
+      tier: PremiumTier.premium,
+      description: 'Full AI coaching + all Qaris',
+      features: [
+        'Advanced AI Engine — 25+ Tajwid rules',
+        '15 World-class Qari audio',
+        'Word-level mistake detection',
+        'Hifz tools & revision plans',
+        'Offline Quran & audio download',
+        'Compare vs Sheikh waveform',
+        'Extra streak freezes',
+        'Premium Mushaf themes',
+        'Ad-free experience',
+        'Priority support',
+      ],
+    ),
+    PremiumPlan(
       id: 'yearly',
-      name: 'Premium',
+      name: 'Premium Yearly',
       price: '₹199',
       period: '/year',
       tier: PremiumTier.premium,
-      description: 'Full AI coaching + all Qaris',
+      description: 'Save 40% with yearly billing',
       isPopular: true,
       features: [
         'Advanced AI Engine — 25+ Tajwid rules',
@@ -434,12 +499,28 @@ class PremiumProvider extends ChangeNotifier {
       ],
     ),
     PremiumPlan(
+      id: 'family_monthly',
+      name: 'Family Monthly',
+      price: '₹79',
+      period: '/month',
+      tier: PremiumTier.family,
+      description: 'Up to 3 users on one plan',
+      features: [
+        'All Premium features',
+        'Up to 3 family members',
+        'Shared family leaderboard',
+        'Family progress dashboard',
+        '15% off Sheikh sessions',
+        '₹100 Sheikh credit / quarter',
+      ],
+    ),
+    PremiumPlan(
       id: 'family_yearly',
-      name: 'Family',
+      name: 'Family Yearly',
       price: '₹499',
       period: '/year',
       tier: PremiumTier.family,
-      description: '3 users on one plan',
+      description: 'Save 45% with yearly billing',
       features: [
         'All Premium features',
         'Up to 3 family members',
@@ -494,44 +575,63 @@ class PremiumProvider extends ChangeNotifier {
       // If we're using placeholder keys, skip RevenueCat and go to mock
       if (!RevenueCatService.isConfigured) {
         await Future.delayed(const Duration(seconds: 1));
-        _currentPlanId = planId;
-        _tier = _tierFromPlanId(planId);
+        if (planId.startsWith('credits_')) {
+          final amount = int.parse(planId.split('_')[1]);
+          await addSheikhCredits(amount);
+        } else {
+          _currentPlanId = planId;
+          _tier = _tierFromPlanId(planId);
 
-        // Award Premium Bridge credits on upgrade
-        if (_tier == PremiumTier.premium || _tier == PremiumTier.family || _tier == PremiumTier.lifetime) {
-          _sheikhCredits += 100; // ₹100 initial credit
-        }
+          // Award Premium Bridge credits on upgrade
+          if (_tier == PremiumTier.premium || _tier == PremiumTier.family || _tier == PremiumTier.lifetime) {
+            _sheikhCredits += 100; // ₹100 initial credit
+          }
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mock_plan_id', planId);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mock_plan_id', planId);
 
-        if (_userId != null) {
-          await FirebaseFirestore.instance.collection('users').doc(_userId).set({
-            'mockPlanId': planId,
-            'sheikhCredits': _sheikhCredits,
-          }, SetOptions(merge: true));
+          if (_userId != null) {
+            await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+              'mockPlanId': planId,
+              'sheikhCredits': _sheikhCredits,
+            }, SetOptions(merge: true));
+          }
         }
       } else {
         final customerInfo = await RevenueCatService.purchasePlan(planId);
         if (customerInfo != null) {
-          _updateFromCustomerInfo(customerInfo);
+          if (planId.startsWith('credits_')) {
+            final amount = int.parse(planId.split('_')[1]);
+            await addSheikhCredits(amount);
+          } else {
+            _updateFromCustomerInfo(customerInfo);
+          }
         }
       }
     } catch (e) {
       debugPrint('Purchase error: $e');
       // Even on error, if in dev mode, we can mock it
       if (!RevenueCatService.isConfigured) {
-        _currentPlanId = planId;
-        _tier = _tierFromPlanId(planId);
+        if (planId.startsWith('credits_')) {
+          final amount = int.parse(planId.split('_')[1]);
+          await addSheikhCredits(amount);
+        } else {
+          _currentPlanId = planId;
+          _tier = _tierFromPlanId(planId);
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mock_plan_id', planId);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('mock_plan_id', planId);
 
-        if (_userId != null) {
-          await FirebaseFirestore.instance.collection('users').doc(_userId).set({
-            'mockPlanId': planId,
-          }, SetOptions(merge: true));
+          if (_userId != null) {
+            await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+              'mockPlanId': planId,
+            }, SetOptions(merge: true));
+          }
         }
+      } else {
+        _isLoading = false;
+        notifyListeners();
+        rethrow;
       }
     }
 
@@ -539,17 +639,20 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> restorePurchases() async {
+  Future<bool> restorePurchases() async {
     debugPrint('PremiumProvider: restorePurchases() called. isConfigured=${RevenueCatService.isConfigured}');
     _isLoading = true;
     notifyListeners();
 
     try {
+      await _initRevenueCat();
       if (RevenueCatService.isConfigured) {
         final customerInfo = await RevenueCatService.restorePurchases();
         if (customerInfo != null) {
           _updateFromCustomerInfo(customerInfo);
+          return _tier != PremiumTier.free;
         }
+        return false;
       } else {
         await Future.delayed(const Duration(seconds: 1));
         debugPrint('RevenueCat: Mock restore successful');
@@ -557,38 +660,72 @@ class PremiumProvider extends ChangeNotifier {
         if (_userId != null) {
           final userDoc = await FirebaseFirestore.instance.collection('users').doc(_userId).get();
           if (userDoc.exists) {
-            final mockPlanId = userDoc.data()?['mockPlanId'] ?? 'yearly';
-            _currentPlanId = mockPlanId;
-            _tier = _tierFromPlanId(mockPlanId);
+            final mockPlanId = userDoc.data()?['mockPlanId'];
+            if (mockPlanId != null) {
+              _currentPlanId = mockPlanId;
+              _tier = _tierFromPlanId(mockPlanId);
 
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('mock_plan_id', mockPlanId);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('mock_plan_id', mockPlanId);
+              notifyListeners();
+              return true;
+            }
           }
+          return false;
         } else {
           _currentPlanId = 'yearly';
           _tier = PremiumTier.premium;
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('mock_plan_id', 'yearly');
+          notifyListeners();
+          return true;
         }
       }
     } catch (e) {
       debugPrint('Restore error: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   // ─── Premium Bridge ───────────────────────────────────────────────────────
 
   /// Use Sheikh credits for a session. Returns true if successful.
-  bool useSheikhCredits(int amount) {
+  Future<bool> useSheikhCredits(int amount) async {
     if (_sheikhCredits >= amount) {
       _sheikhCredits -= amount;
       notifyListeners();
+
+      if (_userId != null) {
+        try {
+          await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+            'sheikhCredits': _sheikhCredits,
+          }, SetOptions(merge: true));
+        } catch (e) {
+          debugPrint('Error saving sheikh credits: $e');
+        }
+      }
       return true;
     }
     return false;
+  }
+
+  /// Add Sheikh credits (e.g. from top-up / session purchase).
+  Future<void> addSheikhCredits(int amount) async {
+    _sheikhCredits += amount;
+    notifyListeners();
+
+    if (_userId != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(_userId).set({
+          'sheikhCredits': _sheikhCredits,
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('Error saving sheikh credits: $e');
+      }
+    }
   }
 
   /// Award quarterly Sheikh credits (called from a scheduled check).

@@ -387,9 +387,19 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     setState(() => _isAnalyzing = false);
 
+    if (mounted && result.isMock && _currentRecordingPath != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Connection to analysis server failed. Falling back to offline feedback.'),
+          backgroundColor: AppTheme.accentAmber,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+
     if (mounted) {
       final next = await Navigator.of(context).push(
-        MaterialPageRoute<bool>(
+        MaterialPageRoute<dynamic>(
           builder: (_) => AIFeedbackScreen(
             result: result,
             surahName: _selectedSurah?.name ?? 'Unknown',
@@ -404,7 +414,29 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
       if (next == true && mounted) {
         _goToNextAyah();
+      } else if (next is Map && next['action'] == 'switch_ayah' && mounted) {
+        final surahNum = next['surahNumber'] as int;
+        final ayahNum = next['ayahNumber'] as int;
+        _loadSpecificAyah(surahNum, ayahNum);
       }
+    }
+  }
+
+  Future<void> _loadSpecificAyah(int surahNumber, int ayahNumber) async {
+    final ayahs = await QuranDatabaseHelper.instance.getSurahAyahs(surahNumber);
+    if (ayahs.isNotEmpty && mounted) {
+      final target = ayahs.firstWhere(
+        (a) => a.ayahNumber == ayahNumber,
+        orElse: () => ayahs[0],
+      );
+      setState(() {
+        _selectedAyah = target;
+        // Sync surah if it changed
+        final surahs = context.read<QuranProvider>().surahs;
+        try {
+          _selectedSurah = surahs.firstWhere((s) => s.number == surahNumber);
+        } catch (_) {}
+      });
     }
   }
 
@@ -431,6 +463,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       );
     }
   }
+
 
   Future<void> _playAyah() async {
     if (_selectedAyah == null) return;

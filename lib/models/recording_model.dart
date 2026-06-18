@@ -10,6 +10,7 @@ class RecordingModel {
   final String? audioLocalPath;
   final DateTime timestamp;
   final String? sheikhFeedback;
+  final String? sheikhFeedbackAudioUrl;
   final String? sheikhId;
   final bool sheikhApproved;
   final int durationSeconds;
@@ -26,6 +27,7 @@ class RecordingModel {
     this.audioLocalPath,
     required this.timestamp,
     this.sheikhFeedback,
+    this.sheikhFeedbackAudioUrl,
     this.sheikhId,
     this.sheikhApproved = false,
     this.durationSeconds = 0,
@@ -54,6 +56,7 @@ class RecordingModel {
           ? DateTime.parse(map['timestamp'])
           : DateTime.now(),
       sheikhFeedback: map['sheikhFeedback'],
+      sheikhFeedbackAudioUrl: map['sheikhFeedbackAudioUrl'],
       sheikhId: map['sheikhId'],
       sheikhApproved: map['sheikhApproved'] ?? false,
       durationSeconds: map['durationSeconds'] ?? 0,
@@ -71,6 +74,7 @@ class RecordingModel {
     'audioUrl': audioUrl,
     'timestamp': timestamp.toIso8601String(),
     'sheikhFeedback': sheikhFeedback,
+    'sheikhFeedbackAudioUrl': sheikhFeedbackAudioUrl,
     'sheikhId': sheikhId,
     'sheikhApproved': sheikhApproved,
     'durationSeconds': durationSeconds,

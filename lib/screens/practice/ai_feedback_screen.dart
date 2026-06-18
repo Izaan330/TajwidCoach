@@ -7,6 +7,11 @@ import '../../models/recording_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sheikh_provider.dart';
 import '../store/paywall_screen.dart';
+import '../../services/quran_database_helper.dart';
+import '../../models/surah_model.dart';
+import '../../providers/settings_provider.dart';
+import '../../widgets/tajweed_text.dart';
+
 
 class AIFeedbackScreen extends StatefulWidget {
   final TajwidAnalysisResult result;
@@ -30,6 +35,72 @@ class AIFeedbackScreen extends StatefulWidget {
 
 class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
   bool _isSubmitting = false;
+  AyahModel? _recitedAyahModel;
+  bool _isLoadingRecited = false;
+  AyahModel? _expectedAyahModel;
+  bool _isLoadingExpected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpectedAyah();
+    if (widget.result.isMismatch &&
+        widget.result.recitedAyah != null &&
+        widget.result.recitedAyah != 'Unknown') {
+      _loadRecitedAyah();
+    }
+  }
+
+  Future<void> _loadExpectedAyah() async {
+    setState(() => _isLoadingExpected = true);
+    try {
+      final parts = widget.ayahRef.split(':');
+      if (parts.length == 2) {
+        final surahNum = int.tryParse(parts[0]);
+        final ayahNum = int.tryParse(parts[1]);
+        if (surahNum != null && ayahNum != null) {
+          final model = await QuranDatabaseHelper.instance.getAyah(surahNum, ayahNum);
+          if (mounted) {
+            setState(() {
+              _expectedAyahModel = model;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading expected ayah: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingExpected = false);
+      }
+    }
+  }
+
+  Future<void> _loadRecitedAyah() async {
+    setState(() => _isLoadingRecited = true);
+    try {
+      final parts = widget.result.recitedAyah!.split(':');
+      if (parts.length == 2) {
+        final surahNum = int.tryParse(parts[0]);
+        final ayahNum = int.tryParse(parts[1]);
+        if (surahNum != null && ayahNum != null) {
+          final model = await QuranDatabaseHelper.instance.getAyah(surahNum, ayahNum);
+          if (mounted) {
+            setState(() {
+              _recitedAyahModel = model;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading recited ayah: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingRecited = false);
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -51,187 +122,207 @@ class _AIFeedbackScreenState extends State<AIFeedbackScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Score Card
-            _ScoreCard(result: widget.result, ayahRef: widget.ayahRef),
-            const SizedBox(height: 16),
+            if (widget.result.isMismatch) ...[
+              _MismatchCard(
+                result: widget.result,
+                expectedAyahRef: widget.ayahRef,
+                expectedAyahModel: _expectedAyahModel,
+                isLoadingExpected: _isLoadingExpected,
+                recitedAyahModel: _recitedAyahModel,
+                isLoadingRecited: _isLoadingRecited,
+                onTryAgain: () => Navigator.of(context).pop(),
+                onSwitchAyah: (surahNum, ayahNum) {
+                  Navigator.of(context).pop({
+                    'action': 'switch_ayah',
+                    'surahNumber': surahNum,
+                    'ayahNumber': ayahNum,
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              // Score Card
+              _ScoreCard(result: widget.result, ayahRef: widget.ayahRef),
+              const SizedBox(height: 16),
 
-            // Encouragement
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+              // Encouragement
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.stars_rounded, color: AppTheme.accentAmber, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.result.encouragement,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
+              const SizedBox(height: 16),
+
+              // Weak Words
+              if (widget.result.weakWords.isNotEmpty) ...[
+                _buildSectionTitle('Words Needing Attention', icon: Icons.error_rounded, color: AppTheme.qalqalahRed),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.qalqalahRedBg,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.result.weakWords
+                        .map(
+                          (word) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.cardWhite,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppTheme.qalqalahRed.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              word,
+                              style: const TextStyle(
+                                fontFamily: 'AmiriQuran',
+                                fontSize: 20,
+                                color: AppTheme.qalqalahRed,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textDirection: TextDirection.rtl,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Rule Breakdown
+              _buildSectionTitle('Tajwid Rule Breakdown', icon: Icons.bar_chart_rounded, color: AppTheme.primaryGreen),
+              ...widget.result.ruleScores.map((rs) => _RuleScoreCard(ruleScore: rs)),
+              
+              if (widget.result.lockedRulesCount > 0) ...[
+                const SizedBox(height: 12),
+                _LockedRulesBanner(count: widget.result.lockedRulesCount),
+              ],
+              
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Row(
                 children: [
-                  const Icon(Icons.stars_rounded, color: AppTheme.accentAmber, size: 24),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Try Again'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      widget.result.encouragement,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                        height: 1.5,
-                      ),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: const Text('Next Ayah'),
+                      onPressed: () =>
+                          Navigator.of(context).pop(true),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Weak Words
-            if (widget.result.weakWords.isNotEmpty) ...[
-              _buildSectionTitle('Words Needing Attention', icon: Icons.error_rounded, color: AppTheme.qalqalahRed),
+              // Sheikh assessment CTA
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.qalqalahRedBg,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6A1B9A), Color(0xFF4527A0)],
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.result.weakWords
-                      .map(
-                        (word) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.cardWhite,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppTheme.qalqalahRed.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Text(
-                            word,
-                            style: const TextStyle(
-                              fontFamily: 'AmiriQuran',
-                              fontSize: 20,
-                              color: AppTheme.qalqalahRed,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textDirection: TextDirection.rtl,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Rule Breakdown
-            _buildSectionTitle('Tajwid Rule Breakdown', icon: Icons.bar_chart_rounded, color: AppTheme.primaryGreen),
-            ...widget.result.ruleScores.map((rs) => _RuleScoreCard(ruleScore: rs)),
-            
-            if (widget.result.lockedRulesCount > 0) ...[
-              const SizedBox(height: 12),
-              _LockedRulesBanner(count: widget.result.lockedRulesCount),
-            ],
-            
-            const SizedBox(height: 16),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Try Again'),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: const Text('Next Ayah'),
-                    onPressed: () =>
-                        Navigator.of(context).pop(true),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Sheikh assessment CTA
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6A1B9A), Color(0xFF4527A0)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.school_rounded, color: Colors.white, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Get Sheikh Feedback',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          user?.sheikhId != null
-                              ? 'Send to your assigned Sheikh'
-                              : 'Select a certified Sheikh for review',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : TextButton(
-                          onPressed: _submitToSheikh,
-                          child: Text(
-                            user?.sheikhId != null ? 'Send' : 'Browse',
-                            style: const TextStyle(
+                child: Row(
+                  children: [
+                    const Icon(Icons.school_rounded, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Get Sheikh Feedback',
+                            style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Note: Our AI analysis is a supporting tool and is continuously improving. For definitive feedback, we recommend submitting your recitation for Sheikh review.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                  fontStyle: FontStyle.italic,
+                          Text(
+                            user?.sheikhId != null
+                                ? 'Send to your assigned Sheikh'
+                                : 'Select a certified Sheikh for review',
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : TextButton(
+                            onPressed: _submitToSheikh,
+                            child: Text(
+                              user?.sheikhId != null ? 'Send' : 'Browse',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Note: Our AI analysis is a supporting tool and is continuously improving. For definitive feedback, we recommend submitting your recitation for Sheikh review.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
           ],
         ),
       ),
@@ -547,4 +638,273 @@ class _LockedRulesBanner extends StatelessWidget {
     );
   }
 }
+
+class _MismatchCard extends StatelessWidget {
+  final TajwidAnalysisResult result;
+  final String expectedAyahRef;
+  final AyahModel? expectedAyahModel;
+  final bool isLoadingExpected;
+  final AyahModel? recitedAyahModel;
+  final bool isLoadingRecited;
+  final VoidCallback onTryAgain;
+  final Function(int, int) onSwitchAyah;
+
+  const _MismatchCard({
+    required this.result,
+    required this.expectedAyahRef,
+    this.expectedAyahModel,
+    required this.isLoadingExpected,
+    required this.recitedAyahModel,
+    required this.isLoadingRecited,
+    required this.onTryAgain,
+    required this.onSwitchAyah,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Extract transcription from feedback
+    final cleanTranscription = result.feedback
+        .replaceFirst("Transcription: '", "")
+        .replaceFirst("' (mismatch)", "");
+
+    final defaultFont = context.read<SettingsProvider>().defaultFontFamily;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.cardWhite,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.accentAmber.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentAmber.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.accentAmber.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: AppTheme.accentAmber,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Ayah Mismatch Detected',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              'Our AI analysis detected that you recited a different verse than the one selected. Please make sure you recite the correct verse.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: AppTheme.divider),
+          const SizedBox(height: 20),
+
+          // Expected Verse Details
+          if (isLoadingExpected) ...[
+            const CircularProgressIndicator(color: AppTheme.primaryGreen),
+            const SizedBox(height: 20),
+          ] else if (expectedAyahModel != null) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Expected Verse (Selected):',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.accentAmber.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.accentAmber.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Surah $expectedAyahRef',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.accentAmber,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TajweedText(
+                    text: expectedAyahModel!.arabicText,
+                    tajweedTagText: expectedAyahModel!.tajweedText,
+                    fontSize: 18,
+                    fontFamily: defaultFont,
+                    lineHeight: 1.8,
+                    showTajweed: true,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Transcription heard details
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'What We Heard:',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundCream,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.divider, width: 1),
+            ),
+            child: Text(
+              cleanTranscription,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'AmiriQuran',
+                color: AppTheme.textPrimary,
+                height: 1.6,
+              ),
+            ),
+          ),
+          
+          if (isLoadingRecited) ...[
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(color: AppTheme.primaryGreen),
+          ] else if (recitedAyahModel != null) ...[
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Identified Verse:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Surah ${recitedAyahModel!.surahNumber}:${recitedAyahModel!.ayahNumber}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TajweedText(
+                    text: recitedAyahModel!.arabicText,
+                    tajweedTagText: recitedAyahModel!.tajweedText,
+                    fontSize: 18,
+                    fontFamily: defaultFont,
+                    lineHeight: 1.8,
+                    showTajweed: true,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.swap_horiz_rounded),
+              label: Text('Switch to Surah ${recitedAyahModel!.surahNumber}:${recitedAyahModel!.ayahNumber}'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => onSwitchAyah(
+                recitedAyahModel!.surahNumber,
+                recitedAyahModel!.ayahNumber,
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try Expected Ayah Again'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: onTryAgain,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 

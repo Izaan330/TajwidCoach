@@ -76,21 +76,38 @@ class RecordingService {
 
   /// Fetches a sheikh's assigned students by reading their base profile info.
   /// (This usually requires a many-to-many or student.sheikhId relationship)
-  Stream<List<String>> getSheikhStudentUids(String sheikhId) {
+  Stream<List<Map<String, dynamic>>> getSheikhStudentProfiles(String sheikhId) {
     if (_firestore == null) return const Stream.empty();
     return _firestore!
         .collection('users')
         .where('sheikhId', isEqualTo: sheikhId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = Map<String, dynamic>.from(doc.data());
+              if (data['uid'] == null) {
+                data['uid'] = doc.id;
+              }
+              return data;
+            }).toList());
+  }
+
+  /// Uploads a feedback audio file to Firebase Storage.
+  Future<String> uploadFeedbackAudioFile(String filePath, String sheikhId) async {
+    if (_storage == null) throw Exception('Firebase Storage not available');
+    final file = File(filePath);
+    final fileName = 'feedback_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final ref = _storage!.ref().child('feedbacks').child(sheikhId).child(fileName);
+    await ref.putFile(file);
+    return await ref.getDownloadURL();
   }
 
   /// Submits feedback for a recording.
-  Future<void> submitFeedback(String recordingId, String feedback, bool approved) async {
+  Future<void> submitFeedback(String recordingId, String feedback, bool approved, {String? feedbackAudioUrl}) async {
     if (_firestore == null) return;
     await _firestore!.collection('recordings').doc(recordingId).update({
       'sheikhFeedback': feedback,
       'sheikhApproved': approved,
+      'sheikhFeedbackAudioUrl': feedbackAudioUrl,
     });
   }
 
@@ -100,10 +117,13 @@ class RecordingService {
     return _firestore!
         .collection('recordings')
         .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RecordingModel.fromMap(doc.data()))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => RecordingModel.fromMap(doc.data()))
+              .toList();
+          list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return list;
+        });
   }
 }

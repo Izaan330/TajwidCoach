@@ -6,6 +6,217 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 
+class CountryModel {
+  final String code;
+  final String flag;
+  final String name;
+
+  const CountryModel({
+    required this.code,
+    required this.flag,
+    required this.name,
+  });
+}
+
+const List<CountryModel> _countries = [
+  CountryModel(code: '+93', flag: '🇦🇫', name: 'Afghanistan'),
+  CountryModel(code: '+355', flag: '🇦🇱', name: 'Albania'),
+  CountryModel(code: '+213', flag: '🇩🇿', name: 'Algeria'),
+  CountryModel(code: '+376', flag: '🇦🇩', name: 'Andorra'),
+  CountryModel(code: '+244', flag: '🇦🇴', name: 'Angola'),
+  CountryModel(code: '+1-268', flag: '🇦🇬', name: 'Antigua and Barbuda'),
+  CountryModel(code: '+54', flag: '🇦🇷', name: 'Argentina'),
+  CountryModel(code: '+374', flag: '🇦🇲', name: 'Armenia'),
+  CountryModel(code: '+61', flag: '🇦🇺', name: 'Australia'),
+  CountryModel(code: '+43', flag: '🇦🇹', name: 'Austria'),
+  CountryModel(code: '+994', flag: '🇦🇿', name: 'Azerbaijan'),
+  CountryModel(code: '+1-242', flag: '🇧🇸', name: 'Bahamas'),
+  CountryModel(code: '+973', flag: '🇧🇭', name: 'Bahrain'),
+  CountryModel(code: '+880', flag: '🇧🇩', name: 'Bangladesh'),
+  CountryModel(code: '+1-246', flag: '🇧🇧', name: 'Barbados'),
+  CountryModel(code: '+375', flag: '🇧🇾', name: 'Belarus'),
+  CountryModel(code: '+32', flag: '🇧🇪', name: 'Belgium'),
+  CountryModel(code: '+501', flag: '🇧🇿', name: 'Belize'),
+  CountryModel(code: '+229', flag: '🇧🇯', name: 'Benin'),
+  CountryModel(code: '+975', flag: '🇧🇹', name: 'Bhutan'),
+  CountryModel(code: '+591', flag: '🇧🇴', name: 'Bolivia'),
+  CountryModel(code: '+387', flag: '🇧🇦', name: 'Bosnia and Herzegovina'),
+  CountryModel(code: '+267', flag: '🇧🇼', name: 'Botswana'),
+  CountryModel(code: '+55', flag: '🇧🇷', name: 'Brazil'),
+  CountryModel(code: '+673', flag: '🇧🇳', name: 'Brunei'),
+  CountryModel(code: '+359', flag: '🇧🇬', name: 'Bulgaria'),
+  CountryModel(code: '+226', flag: '🇧🇫', name: 'Burkina Faso'),
+  CountryModel(code: '+257', flag: '🇧🇮', name: 'Burundi'),
+  CountryModel(code: '+238', flag: '🇨🇻', name: 'Cabo Verde'),
+  CountryModel(code: '+855', flag: '🇰🇭', name: 'Cambodia'),
+  CountryModel(code: '+237', flag: '🇨🇲', name: 'Cameroon'),
+  CountryModel(code: '+1', flag: '🇨🇦', name: 'Canada'),
+  CountryModel(code: '+236', flag: '🇨🇫', name: 'Central African Republic'),
+  CountryModel(code: '+235', flag: '🇹🇩', name: 'Chad'),
+  CountryModel(code: '+56', flag: '🇨🇱', name: 'Chile'),
+  CountryModel(code: '+86', flag: '🇨🇳', name: 'China'),
+  CountryModel(code: '+57', flag: '🇨🇴', name: 'Colombia'),
+  CountryModel(code: '+269', flag: '🇰🇲', name: 'Comoros'),
+  CountryModel(code: '+242', flag: '🇨🇬', name: 'Congo'),
+  CountryModel(code: '+243', flag: '🇨🇩', name: 'DR Congo'),
+  CountryModel(code: '+506', flag: '🇨🇷', name: 'Costa Rica'),
+  CountryModel(code: '+385', flag: '🇭🇷', name: 'Croatia'),
+  CountryModel(code: '+53', flag: '🇨🇺', name: 'Cuba'),
+  CountryModel(code: '+357', flag: '🇨🇾', name: 'Cyprus'),
+  CountryModel(code: '+420', flag: '🇨🇿', name: 'Czechia'),
+  CountryModel(code: '+45', flag: '🇩🇰', name: 'Denmark'),
+  CountryModel(code: '+253', flag: '🇩🇯', name: 'Djibouti'),
+  CountryModel(code: '+1-767', flag: '🇩🇲', name: 'Dominica'),
+  CountryModel(code: '+1-809', flag: '🇩🇴', name: 'Dominican Republic'),
+  CountryModel(code: '+593', flag: '🇪🇨', name: 'Ecuador'),
+  CountryModel(code: '+20', flag: '🇪🇬', name: 'Egypt'),
+  CountryModel(code: '+503', flag: '🇸🇻', name: 'El Salvador'),
+  CountryModel(code: '+240', flag: '🇬🇶', name: 'Equatorial Guinea'),
+  CountryModel(code: '+291', flag: '🇪🇷', name: 'Eritrea'),
+  CountryModel(code: '+372', flag: '🇪🇪', name: 'Estonia'),
+  CountryModel(code: '+268', flag: '🇸🇿', name: 'Eswatini'),
+  CountryModel(code: '+251', flag: '🇪🇹', name: 'Ethiopia'),
+  CountryModel(code: '+679', flag: '🇫🇯', name: 'Fiji'),
+  CountryModel(code: '+358', flag: '🇫🇮', name: 'Finland'),
+  CountryModel(code: '+33', flag: '🇫🇷', name: 'France'),
+  CountryModel(code: '+241', flag: '🇬🇦', name: 'Gabon'),
+  CountryModel(code: '+220', flag: '🇬🇲', name: 'Gambia'),
+  CountryModel(code: '+995', flag: '🇬🇪', name: 'Georgia'),
+  CountryModel(code: '+49', flag: '🇩🇪', name: 'Germany'),
+  CountryModel(code: '+233', flag: '🇬🇭', name: 'Ghana'),
+  CountryModel(code: '+30', flag: '🇬🇷', name: 'Greece'),
+  CountryModel(code: '+1-473', flag: '🇬🇩', name: 'Grenada'),
+  CountryModel(code: '+502', flag: '🇬🇹', name: 'Guatemala'),
+  CountryModel(code: '+224', flag: '🇬🇳', name: 'Guinea'),
+  CountryModel(code: '+245', flag: '🇬🇼', name: 'Guinea-Bissau'),
+  CountryModel(code: '+592', flag: '🇬🇾', name: 'Guyana'),
+  CountryModel(code: '+509', flag: '🇭🇹', name: 'Haiti'),
+  CountryModel(code: '+504', flag: '🇭🇳', name: 'Honduras'),
+  CountryModel(code: '+36', flag: '🇭🇺', name: 'Hungary'),
+  CountryModel(code: '+354', flag: '🇮🇸', name: 'Iceland'),
+  CountryModel(code: '+91', flag: '🇮🇳', name: 'India'),
+  CountryModel(code: '+62', flag: '🇮🇩', name: 'Indonesia'),
+  CountryModel(code: '+98', flag: '🇮🇷', name: 'Iran'),
+  CountryModel(code: '+964', flag: '🇮🇶', name: 'Iraq'),
+  CountryModel(code: '+353', flag: '🇮🇪', name: 'Ireland'),
+  CountryModel(code: '+972', flag: '🇮🇱', name: 'Israel'),
+  CountryModel(code: '+39', flag: '🇮🇹', name: 'Italy'),
+  CountryModel(code: '+1-876', flag: '🇯🇲', name: 'Jamaica'),
+  CountryModel(code: '+81', flag: '🇯🇵', name: 'Japan'),
+  CountryModel(code: '+962', flag: '🇯🇴', name: 'Jordan'),
+  CountryModel(code: '+7', flag: '🇰🇿', name: 'Kazakhstan'),
+  CountryModel(code: '+254', flag: '🇰🇪', name: 'Kenya'),
+  CountryModel(code: '+686', flag: '🇰🇮', name: 'Kiribati'),
+  CountryModel(code: '+850', flag: '🇰🇵', name: 'North Korea'),
+  CountryModel(code: '+82', flag: '🇰🇷', name: 'South Korea'),
+  CountryModel(code: '+965', flag: '🇰🇼', name: 'Kuwait'),
+  CountryModel(code: '+996', flag: '🇰🇬', name: 'Kyrgyzstan'),
+  CountryModel(code: '+856', flag: '🇱🇦', name: 'Laos'),
+  CountryModel(code: '+371', flag: '🇱🇻', name: 'Latvia'),
+  CountryModel(code: '+961', flag: '🇱🇧', name: 'Lebanon'),
+  CountryModel(code: '+266', flag: '🇱🇸', name: 'Lesotho'),
+  CountryModel(code: '+231', flag: '🇱🇷', name: 'Liberia'),
+  CountryModel(code: '+218', flag: '🇱🇾', name: 'Libya'),
+  CountryModel(code: '+423', flag: '🇱🇮', name: 'Liechtenstein'),
+  CountryModel(code: '+370', flag: '🇱🇹', name: 'Lithuania'),
+  CountryModel(code: '+352', flag: '🇱🇺', name: 'Luxembourg'),
+  CountryModel(code: '+389', flag: '🇲🇰', name: 'North Macedonia'),
+  CountryModel(code: '+261', flag: '🇲🇬', name: 'Madagascar'),
+  CountryModel(code: '+265', flag: '🇲🇼', name: 'Malawi'),
+  CountryModel(code: '+60', flag: '🇲🇾', name: 'Malaysia'),
+  CountryModel(code: '+960', flag: '🇲🇻', name: 'Maldives'),
+  CountryModel(code: '+223', flag: '🇲🇱', name: 'Mali'),
+  CountryModel(code: '+356', flag: '🇲🇹', name: 'Malta'),
+  CountryModel(code: '+692', flag: '🇲🇭', name: 'Marshall Islands'),
+  CountryModel(code: '+222', flag: '🇲🇷', name: 'Mauritania'),
+  CountryModel(code: '+230', flag: '🇲🇺', name: 'Mauritius'),
+  CountryModel(code: '+52', flag: '🇲🇽', name: 'Mexico'),
+  CountryModel(code: '+691', flag: '🇫🇲', name: 'Micronesia'),
+  CountryModel(code: '+373', flag: '🇲🇩', name: 'Moldova'),
+  CountryModel(code: '+377', flag: '🇲🇨', name: 'Monaco'),
+  CountryModel(code: '+976', flag: '🇲🇳', name: 'Mongolia'),
+  CountryModel(code: '+382', flag: '🇲🇪', name: 'Montenegro'),
+  CountryModel(code: '+212', flag: '🇲🇦', name: 'Morocco'),
+  CountryModel(code: '+258', flag: '🇲🇿', name: 'Mozambique'),
+  CountryModel(code: '+95', flag: '🇲🇲', name: 'Myanmar'),
+  CountryModel(code: '+264', flag: '🇳🇦', name: 'Namibia'),
+  CountryModel(code: '+674', flag: '🇳🇷', name: 'Nauru'),
+  CountryModel(code: '+977', flag: '🇳🇵', name: 'Nepal'),
+  CountryModel(code: '+31', flag: '🇳🇱', name: 'Netherlands'),
+  CountryModel(code: '+64', flag: '🇳🇿', name: 'New Zealand'),
+  CountryModel(code: '+505', flag: '🇳🇮', name: 'Nicaragua'),
+  CountryModel(code: '+227', flag: '🇳🇪', name: 'Niger'),
+  CountryModel(code: '+234', flag: '🇳🇬', name: 'Nigeria'),
+  CountryModel(code: '+47', flag: '🇳🇴', name: 'Norway'),
+  CountryModel(code: '+968', flag: '🇴🇲', name: 'Oman'),
+  CountryModel(code: '+92', flag: '🇵🇰', name: 'Pakistan'),
+  CountryModel(code: '+680', flag: '🇵🇼', name: 'Palau'),
+  CountryModel(code: '+970', flag: '🇵🇸', name: 'Palestine'),
+  CountryModel(code: '+507', flag: '🇵🇦', name: 'Panama'),
+  CountryModel(code: '+675', flag: '🇵🇬', name: 'Papua New Guinea'),
+  CountryModel(code: '+595', flag: '🇵🇾', name: 'Paraguay'),
+  CountryModel(code: '+51', flag: '🇵🇪', name: 'Peru'),
+  CountryModel(code: '+63', flag: '🇵🇭', name: 'Philippines'),
+  CountryModel(code: '+48', flag: '🇵🇱', name: 'Poland'),
+  CountryModel(code: '+351', flag: '🇵🇹', name: 'Portugal'),
+  CountryModel(code: '+974', flag: '🇶🇦', name: 'Qatar'),
+  CountryModel(code: '+40', flag: '🇷🇴', name: 'Romania'),
+  CountryModel(code: '+7', flag: '🇷🇺', name: 'Russia'),
+  CountryModel(code: '+250', flag: '🇷🇼', name: 'Rwanda'),
+  CountryModel(code: '+1-767', flag: '🇰🇳', name: 'Saint Kitts and Nevis'),
+  CountryModel(code: '+1-758', flag: '🇱🇨', name: 'Saint Lucia'),
+  CountryModel(code: '+1-784', flag: '🇻🇨', name: 'Saint Vincent and the Grenadines'),
+  CountryModel(code: '+685', flag: '🇼🇸', name: 'Samoa'),
+  CountryModel(code: '+378', flag: '🇸🇲', name: 'San Marino'),
+  CountryModel(code: '+239', flag: '🇸🇹', name: 'Sao Tome and Principe'),
+  CountryModel(code: '+966', flag: '🇸🇦', name: 'Saudi Arabia'),
+  CountryModel(code: '+221', flag: '🇸🇳', name: 'Senegal'),
+  CountryModel(code: '+381', flag: '🇷🇸', name: 'Serbia'),
+  CountryModel(code: '+248', flag: '🇸🇨', name: 'Seychelles'),
+  CountryModel(code: '+232', flag: '🇸🇱', name: 'Sierra Leone'),
+  CountryModel(code: '+65', flag: '🇸🇬', name: 'Singapore'),
+  CountryModel(code: '+421', flag: '🇸🇰', name: 'Slovakia'),
+  CountryModel(code: '+386', flag: '🇸🇮', name: 'Slovenia'),
+  CountryModel(code: '+677', flag: '🇸🇧', name: 'Solomon Islands'),
+  CountryModel(code: '+252', flag: '🇸🇴', name: 'Somalia'),
+  CountryModel(code: '+27', flag: '🇿🇦', name: 'South Africa'),
+  CountryModel(code: '+211', flag: '🇸🇸', name: 'South Sudan'),
+  CountryModel(code: '+34', flag: '🇪🇸', name: 'Spain'),
+  CountryModel(code: '+94', flag: '🇱🇰', name: 'Sri Lanka'),
+  CountryModel(code: '+249', flag: '🇸🇩', name: 'Sudan'),
+  CountryModel(code: '+597', flag: '🇸🇷', name: 'Suriname'),
+  CountryModel(code: '+46', flag: '🇸🇪', name: 'Sweden'),
+  CountryModel(code: '+41', flag: '🇨🇭', name: 'Switzerland'),
+  CountryModel(code: '+963', flag: '🇸🇾', name: 'Syria'),
+  CountryModel(code: '+886', flag: '🇹🇼', name: 'Taiwan'),
+  CountryModel(code: '+992', flag: '🇹🇯', name: 'Tajikistan'),
+  CountryModel(code: '+255', flag: '🇹🇿', name: 'Tanzania'),
+  CountryModel(code: '+66', flag: '🇹🇭', name: 'Thailand'),
+  CountryModel(code: '+670', flag: '🇹🇱', name: 'Timor-Leste'),
+  CountryModel(code: '+228', flag: '🇹🇬', name: 'Togo'),
+  CountryModel(code: '+690', flag: '🇹🇰', name: 'Tokelau'),
+  CountryModel(code: '+676', flag: '🇹🇴', name: 'Tonga'),
+  CountryModel(code: '+1-868', flag: '🇹🇹', name: 'Trinidad and Tobago'),
+  CountryModel(code: '+216', flag: '🇹🇳', name: 'Tunisia'),
+  CountryModel(code: '+90', flag: '🇹🇷', name: 'Turkey'),
+  CountryModel(code: '+993', flag: '🇹🇲', name: 'Turkmenistan'),
+  CountryModel(code: '+688', flag: '🇹🇻', name: 'Tuvalu'),
+  CountryModel(code: '+256', flag: '🇺🇬', name: 'Uganda'),
+  CountryModel(code: '+380', flag: '🇺🇦', name: 'Ukraine'),
+  CountryModel(code: '+971', flag: '🇦🇪', name: 'UAE'),
+  CountryModel(code: '+44', flag: '🇬🇧', name: 'United Kingdom'),
+  CountryModel(code: '+1', flag: '🇺🇸', name: 'United States'),
+  CountryModel(code: '+598', flag: '🇺🇾', name: 'Uruguay'),
+  CountryModel(code: '+998', flag: '🇺🇿', name: 'Uzbekistan'),
+  CountryModel(code: '+678', flag: '🇻🇺', name: 'Vanuatu'),
+  CountryModel(code: '+39', flag: '🇻🇦', name: 'Vatican'),
+  CountryModel(code: '+58', flag: '🇻🇪', name: 'Venezuela'),
+  CountryModel(code: '+84', flag: '🇻🇳', name: 'Vietnam'),
+  CountryModel(code: '+967', flag: '🇾🇪', name: 'Yemen'),
+  CountryModel(code: '+260', flag: '🇿🇲', name: 'Zambia'),
+  CountryModel(code: '+263', flag: '🇿🇼', name: 'Zimbabwe'),
+];
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -16,6 +227,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen>
     with TickerProviderStateMixin {
   final _phoneController = TextEditingController();
+  CountryModel _selectedCountry = _countries[0]; // Default to UAE (+971)
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -74,6 +286,154 @@ class _AuthScreenState extends State<AuthScreen>
     super.dispose();
   }
 
+  void _showCountryPicker() {
+    String filterQuery = '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF070F1C),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredCountries = _countries.where((c) {
+              return c.name.toLowerCase().contains(filterQuery.toLowerCase()) ||
+                  c.code.contains(filterQuery);
+            }).toList();
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    children: [
+                      // Pull handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Select Country Code',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Search bar
+                      TextField(
+                        onChanged: (val) {
+                          setModalState(() {
+                            filterQuery = val;
+                          });
+                        },
+                        style: GoogleFonts.outfit(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Search by country name or code...',
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFF3F5575), fontSize: 14),
+                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00E676), size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFF070F1C),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF1E2D4A).withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00E676),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: filteredCountries.length,
+                          itemBuilder: (context, index) {
+                            final country = filteredCountries[index];
+                            final isSelected = country.code == _selectedCountry.code && country.flag == _selectedCountry.flag;
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCountry = country;
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF00E676).withValues(alpha: 0.08) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected ? const Color(0xFF00E676).withValues(alpha: 0.2) : Colors.transparent,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      country.flag,
+                                      style: const TextStyle(fontSize: 22),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Text(
+                                        country.name,
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      country.code,
+                                      style: GoogleFonts.outfit(
+                                        color: isSelected ? const Color(0xFF00E676) : const Color(0xFF8FA3C8),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _submit() async {
     HapticFeedback.mediumImpact();
     final auth = context.read<AuthProvider>();
@@ -102,7 +462,14 @@ class _AuthScreenState extends State<AuthScreen>
       if (_codeSent) {
         await auth.signInWithSmsCode(_smsController.text.trim());
       } else {
-        await auth.verifyPhoneNumber(_phoneController.text.trim());
+        String phoneInput = _phoneController.text.trim();
+        if (!phoneInput.startsWith('+')) {
+          if (phoneInput.startsWith('0')) {
+            phoneInput = phoneInput.substring(1);
+          }
+          phoneInput = '${_selectedCountry.code}$phoneInput';
+        }
+        await auth.verifyPhoneNumber(phoneInput);
         if (auth.error == null && mounted) {
           _fadeController.reset();
           _slideController.reset();
@@ -261,7 +628,7 @@ class _AuthScreenState extends State<AuthScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          'Quran Pro: Tajwid AI',
+          'Tajwid AI',
           style: GoogleFonts.outfit(
             fontSize: 28,
             fontWeight: FontWeight.w800,
@@ -670,7 +1037,7 @@ class _AuthScreenState extends State<AuthScreen>
             fontWeight: FontWeight.w600,
           ),
           decoration: InputDecoration(
-            hintText: '+1 234 567 8901',
+            hintText: '50 123 4567',
             hintStyle: GoogleFonts.outfit(color: const Color(0xFF3F5575), fontSize: 15),
             filled: true,
             fillColor: const Color(0xFF070F1C),
@@ -696,15 +1063,45 @@ class _AuthScreenState extends State<AuthScreen>
                 width: 1.5,
               ),
             ),
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E676).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+            prefixIcon: GestureDetector(
+              onTap: _showCountryPicker,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E676).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _selectedCountry.flag,
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _selectedCountry.code,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: Color(0xFF8FA3C8),
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
-              child: const Icon(Icons.phone_rounded,
-                  color: Color(0xFF00E676), size: 18),
             ),
           ),
         ),

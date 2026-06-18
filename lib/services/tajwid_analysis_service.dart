@@ -143,15 +143,8 @@ class TajwidAnalysisService {
     final weakRuleIds = <String>[];
     final excellentRuleIds = <String>[];
 
-    // Analyze a subset of relevant rules
-    final relevantRuleIds = [
-      'idgham',
-      'ikhfa',
-      'qalqalah',
-      'madd_tabi',
-      'ghunnah',
-      'madd_muttasil',
-    ];
+    // Analyze a subset of relevant rules based on reference text
+    final relevantRuleIds = _detectRulesInText(referenceText);
 
     for (final ruleId in relevantRuleIds) {
       final rule = TajwidRulesData.findById(ruleId);
@@ -221,8 +214,10 @@ class TajwidAnalysisService {
       excellentRuleIds: finalExcellentIds,
       encouragement: _getEncouragement(overallScore),
       lockedRulesCount: lockedRulesCount,
+      isMock: true,
     );
   }
+
 
   static List<String> _generateWeakWords(List<String> weakRuleIds) {
     final wordMap = {
@@ -275,6 +270,90 @@ class TajwidAnalysisService {
     if (score >= 70) return 'Great effort! Practice makes perfect!';
     if (score >= 60) return 'Keep going! Every practice brings you closer!';
     return '"Indeed, the one who recites Quran and is expert in it will be with the noble obedient angels." - Sahih Muslim';
+  }
+
+  static List<String> _detectRulesInText(String text) {
+    final rules = <String>[];
+    
+    // 1. Madd Tabi'i - natural elongation, almost always present
+    if (text.contains('ا') || text.contains('و') || text.contains('ي') || text.contains('ٰ')) {
+      rules.add('madd_tabi');
+    }
+    
+    // 2. Ghunnah - Noon or Meem with Shaddah (ّ)
+    if (text.contains('نّ') || text.contains('مّ') || text.contains('ن\u0651') || text.contains('م\u0651')) {
+      rules.add('ghunnah');
+    }
+    
+    // 3. Qalqalah - ق ط ب ج د with Sukun (ْ) or at end of verse pause
+    final hasQalqalahSukun = text.contains('قْ') || text.contains('طْ') || text.contains('بْ') || text.contains('جْ') || text.contains('دْ') ||
+                             text.contains('ق\u0652') || text.contains('ط\u0652') || text.contains('ب\u0652') || text.contains('ج\u0652') || text.contains('د\u0652');
+    bool hasQalqalahEnd = false;
+    // Strip diacritics to find last letter
+    final cleanText = text.replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u200F\u200E]'), '');
+    final words = cleanText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isNotEmpty) {
+      final lastWord = words.last;
+      if (lastWord.isNotEmpty && 'قطبجد'.contains(lastWord[lastWord.length - 1])) {
+        hasQalqalahEnd = true;
+      }
+    }
+    if (hasQalqalahSukun || hasQalqalahEnd) {
+      rules.add('qalqalah');
+    }
+    
+    // 4. Madd Muttasil - Madd letter + Hamzah in same word (ء, ئ, آ)
+    if (text.contains('ء') || text.contains('ئ') || text.contains('آ') || text.contains('\u0653')) {
+      rules.add('madd_muttasil');
+    }
+    
+    // 5. Ikhfa - Noon Sakin or Tanween (نْ, ً, ٍ, ٌ)
+    final hasNoonSakinOrTanween = text.contains('نْ') || text.contains('ن\u0652') || text.contains('ً') || text.contains('ٍ') || text.contains('ٌ');
+    if (hasNoonSakinOrTanween) {
+      rules.add('ikhfa');
+    }
+    
+    // 6. Idgham - solar Shaddah or Noon Sakin/Tanween followed by Yarmaloon
+    final hasSolarShaddah = text.contains('رّ') || text.contains('لّ') || text.contains('دّ') || text.contains('تّ') || 
+                             text.contains('ر\u0651') || text.contains('ل\u0651') || text.contains('د\u0651') || text.contains('ت\u0651');
+    if (hasSolarShaddah || (hasNoonSakinOrTanween && (text.contains('ي') || text.contains('ر') || text.contains('م') || text.contains('ل') || text.contains('و')))) {
+      rules.add('idgham');
+    }
+    
+    // 7. Hamzat al-Wasl
+    if (text.contains('ٱ') || text.contains(' ٱ') || RegExp(r'\bا').hasMatch(text)) {
+      rules.add('hamzat_wasl');
+    }
+    
+    // 8. Lam Shamsiyya / Qamariyya
+    final normText = text.replaceAll('ٱ', 'ا');
+    int idx = 0;
+    while (true) {
+      idx = normText.indexOf('ال', idx);
+      if (idx == -1) break;
+      final afterAl = normText.substring(idx + 2);
+      final cleanAfter = afterAl.replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u200F\u200E]'), '');
+      if (cleanAfter.isNotEmpty) {
+        final nextLetter = cleanAfter[0];
+        if ('تثدذرزسشصضطظلّن'.contains(nextLetter)) {
+          rules.add('lam_shamsiyya');
+        } else if ('ابجحخعغفقكمهوي'.contains(nextLetter)) {
+          rules.add('lam_qamariyya');
+        }
+      }
+      idx += 2;
+    }
+    
+    // 9. Madd Arid
+    if (RegExp(r'(ِي|ُو|َا)[\u0600-\u06FF]\b').hasMatch(text)) {
+      rules.add('madd_arid');
+    }
+    
+    if (rules.isEmpty) {
+      rules.add('madd_tabi');
+    }
+    
+    return rules.toSet().toList();
   }
 }
 

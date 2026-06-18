@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/tajwid_rule_model.dart';
+import '../utils/tajwid_rules_data.dart';
 
 /// Defines all Tajweed rules with their colors (based on the international standard
 /// used by iQuran and similar apps).
@@ -176,7 +177,24 @@ class TajweedRules {
     try {
       return all.firstWhere((r) => r.id == id);
     } catch (_) {
-      return null;
+      try {
+        return TajwidRulesData.rules.firstWhere((r) => r.id == id);
+      } catch (_) {
+        if (id == 'silent' || id == 'slnt') {
+          return const TajwidRule(
+            id: 'silent',
+            name: 'Silent Letter',
+            arabicName: 'حرف صامت',
+            description: 'Silent letter that is written but not pronounced.',
+            colorHex: '#AAAAAA',
+            backgroundHex: '#F5F5F5',
+            category: 'Special',
+            subTypes: [],
+            exampleWord: '',
+          );
+        }
+        return null;
+      }
     }
   }
 

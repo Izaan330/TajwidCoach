@@ -153,80 +153,106 @@ def detect_rules_in_text(arabic_text: str) -> list[str]:
         return []
         
     # 1. Shaddah
-    if 'ّ' in arabic_text:
-        rules.add('shaddah')
-        
+    # if 'ّ' in arabic_text:
+    #     rules.add('shaddah')
+    #     
     # 2. Ghunnah (Noon/Meem with Shaddah)
-    if 'نّ' in arabic_text or 'مّ' in arabic_text:
+    if 'نّ' in arabic_text or 'مّ' in arabic_text or 'ن\u0651' in arabic_text or 'م\u0651' in arabic_text:
         rules.add('ghunnah')
         
-    # 3. Qalqalah (ق ط ب ج د with sukoon or at end of word)
-    if re.search(r'[قطبجد]ْ', arabic_text) or re.search(r'[قطبجد]\b', arabic_text):
+    # 3. Qalqalah (ق ط ب ج د with sukoon or at end of word pause)
+    # Strip diacritics temporarily to find end-of-word characters
+    clean_text = strip_tashkeel(arabic_text)
+    has_qalqalah_sukun = re.search(r'[قطبجد]ْ', arabic_text) or re.search(r'[قطبجد]\u0652', arabic_text)
+    has_qalqalah_end = False
+    if clean_text:
+        words = clean_text.split()
+        # Qalqalah on pause only happens at the end of the verse
+        if words and words[-1][-1] in 'قطبجد':
+            has_qalqalah_end = True
+    if has_qalqalah_sukun or has_qalqalah_end:
         rules.add('qalqalah')
         
-    # 4 & 5. Ra Rules (Tafkhim/Tarqiq of Ra)
-    if 'ر' in arabic_text:
-        rules.add('ra_rules')
-        
+    # 4 & 5. Ra Rules (Tafkhim/Tarqiq of Ra - contains Ra)
+    # if 'ر' in arabic_text:
+    #     rules.add('ra_rules')
+    #     
     # 6 & 7. Lam Shamsiyya / Qamariyya
-    if 'ال' in arabic_text:
-        # Simplistic mock: add both if 'AL' is present
-        rules.add('lam_qamariyya')
-        rules.add('lam_shamsiyya')
+    # Solar letters: ت ث د ذ ر ز س ش ص ض ط ظ ل ن
+    solar_letters = 'تثدذرزسشصضطظلّن'
+    norm_text = re.sub(r'ٱ', 'ا', arabic_text)
+    idx = 0
+    while True:
+        idx = norm_text.find('ال', idx)
+        if idx == -1:
+            break
+        after_al = norm_text[idx+2:]
+        clean_after = strip_tashkeel(after_al)
+        if clean_after:
+            next_letter = clean_after[0]
+            if next_letter in solar_letters:
+                rules.add('lam_shamsiyya')
+            elif next_letter in 'ابجحخعغفقكمهوي':
+                rules.add('lam_qamariyya')
+        idx += 2
         
     # 8. Madd Tabi'i (Alef/Yaa/Waw)
     if re.search(r'َ[اى]', arabic_text) or re.search(r'ِي', arabic_text) or re.search(r'ُو', arabic_text):
         rules.add('madd_tabi')
         
     # 9 & 10. Madd Muttasil/Munfasil
-    if re.search(r'[اوي][\s]*[ءأإ]', arabic_text) or 'ٓ' in arabic_text or 'آ' in arabic_text:
-        rules.add('madd_muttasil')
-        rules.add('madd_munfasil')
+    if '\u0653' in arabic_text or 'آ' in arabic_text:
+        # Check if Hamzah is separated by space (next word)
+        if re.search(r'[\u0653اوي]\s+[ءأإ]', arabic_text):
+            rules.add('madd_munfasil')
+        else:
+            rules.add('madd_muttasil')
 
     # 11. Madd Lazim (Madd letter followed by Shaddah)
     if re.search(r'[اوي]ٓ?\s*[\u0600-\u06FF]ّ', arabic_text) or re.search(r'ٓ', arabic_text):
         rules.add('madd_lazim')
         
     # 12. Madd Leen (Waw/Yaa with Sukoon preceded by Fatha)
-    if re.search(r'َ[وي]ْ', arabic_text):
+    if re.search(r'َ[وي]ْ', arabic_text) or re.search(r'َ[وي]\u0652', arabic_text):
         rules.add('madd_leen')
         
-    # 13. Madd Arid (Madd at end of ayah)
+    # 13. Madd Arid (Madd at end of ayah before final letter)
     if re.search(r'(ِي|ُو|َا)[\u0600-\u06FF]\b', arabic_text):
         rules.add('madd_arid')
         
     # Noon Sakin & Tanween Rules
-    if re.search(r'نْ', arabic_text) or re.search(r'[ًٌٍ]', arabic_text):
+    if re.search(r'نْ', arabic_text) or re.search(r'ن\u0652', arabic_text) or re.search(r'[ًٌٍ]', arabic_text):
         # 14. Iqlab (followed by Baa)
-        if re.search(r'(نْ|[ًٌٍ])\s*ب', arabic_text) or 'ۢ' in arabic_text:
+        if re.search(r'(نْ|ن\u0652|[ًٌٍ])\s*ب', arabic_text) or 'ۢ' in arabic_text:
             rules.add('iqlab')
         # 15. Idgham (followed by ي ر م ل و ن)
-        if re.search(r'(نْ|[ًٌٍ])\s*[يرملون]', arabic_text):
+        elif re.search(r'(نْ|ن\u0652|[ًٌٍ])\s*[يرملون]', arabic_text):
             rules.add('idgham')
         # 16. Izhar (followed by throat letters ء ه ع ح غ خ)
-        if re.search(r'(نْ|[ًٌٍ])\s*[ءهعحغخأإ]', arabic_text):
+        elif re.search(r'(نْ|ن\u0652|[ًٌٍ])\s*[ءهعحغخأإ]', arabic_text):
             rules.add('izhar')
-        # 17. Ikhfa (other letters)
-        rules.add('ikhfa')
+        else:
+            # 17. Ikhfa (other letters)
+            rules.add('ikhfa')
         
     # Meem Sakin Rules
-    if re.search(r'مْ', arabic_text):
+    if re.search(r'مْ', arabic_text) or re.search(r'م\u0652', arabic_text):
         # 18. Idgham Mimi (Meem followed by Meem)
-        if re.search(r'مْ\s*م', arabic_text):
+        if re.search(r'(مْ|م\u0652)\s*م', arabic_text):
             rules.add('idgham_mimi')
         # 19. Ikhfa Shafawi (Meem followed by Baa)
-        elif re.search(r'مْ\s*ب', arabic_text):
+        elif re.search(r'(مْ|م\u0652)\s*ب', arabic_text):
             rules.add('ikhfa_shafawi')
         else:
             # 20. Izhar Shafawi (All other letters)
             rules.add('izhar_shafawi')
             
     # 21 & 22. Tafkhim and Tarqiq (Heavy and Light letters)
-    if re.search(r'[خصضغطقظ]', arabic_text):
-        rules.add('tafkhim')
-    if re.search(r'[بتثجحدرزسشعفكلمنهوي]', arabic_text):
-        rules.add('tarqiq')
-        
+    # if re.search(r'[خصضغطقظ]', arabic_text):
+    #     rules.add('tafkhim')
+    # if re.search(r'[بتثجحدرزسشعفكلمنهوي]', arabic_text):
+    #     rules.add('tarqiq')
+    #     
     # 23. Hamzat al-Wasl
     if 'ٱ' in arabic_text or re.search(r'\bا', arabic_text):
         rules.add('hamzat_wasl')
@@ -240,10 +266,11 @@ def detect_rules_in_text(arabic_text: str) -> list[str]:
         rules.add('sakt')
         
     # 26. Noon Qutni (Connecting Noon - mocked with small noon)
-    if 'ۨ' in arabic_text or re.search(r'نِ\s*ال', arabic_text):
+    if 'ۨ' in arabic_text:
         rules.add('noon_qutni')
         
     return list(rules)
+
 
 
 def transcribe_whisper(speech: np.ndarray) -> str:
@@ -531,6 +558,51 @@ async def analyze_recitation(
             )
 
         score = calculate_score(ref_text, transcription) if ref_text else random.randint(70, 90)
+
+        # --- Mismatch Check ---
+        is_mismatch = False
+        recited_ayah = None
+        
+        # Check if transcription matches another reference verse
+        if score < 50 and transcription.strip():
+            best_other_ref = None
+            best_other_score = 0
+            for ref_key, ref_val in REFERENCE_AYAHS.items():
+                if ref_key == ayah_ref:
+                    continue
+                other_score = calculate_score(ref_val, transcription)
+                if other_score > best_other_score:
+                    best_other_score = other_score
+                    best_other_ref = ref_key
+            
+            # If we found another verse that matches very well (>= 60%), it's a mismatch
+            if best_other_score >= 60 and best_other_score > score:
+                is_mismatch = True
+                recited_ayah = best_other_ref
+                print(f"MISMATCH DETECTED: expected={ayah_ref} ({score}%), recited={best_other_ref} ({best_other_score}%)", flush=True)
+            elif len(strip_tashkeel(transcription).split()) >= 2:
+                # If target match is low (< 50%) and we heard a phrase of at least 2 words,
+                # we flag it as a mismatch (recited_ayah as "Unknown" if not in REFERENCE_AYAHS)
+                is_mismatch = True
+                recited_ayah = "Unknown"
+                print(f"MISMATCH DETECTED: expected={ayah_ref} ({score}%), recited=Unknown", flush=True)
+
+
+        if is_mismatch:
+            feedback_text = f"Transcription: '{transcription}' (mismatch)"
+            return TajwidAnalysisResult(
+                overall_score=15,
+                feedback=feedback_text,
+                grade="Mismatch",
+                rule_scores=[],
+                weak_words=[],
+                weak_rule_ids=[],
+                excellent_rule_ids=[],
+                encouragement="It looks like you recited a different verse. Please try reciting the expected verse.",
+                is_mismatch=True,
+                recited_ayah=recited_ayah
+            )
+
 
         # --- Rule Detection & Mocking all 25 rules ---
         is_weak = score < 75

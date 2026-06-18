@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tajwid_coach/services/tajweed_engine.dart';
+import 'package:tajwid_coach/utils/tajweed_tag_parser.dart';
 
 void main() {
   group('TajweedEngine Tests', () {
@@ -71,4 +72,31 @@ void main() {
       expect(ghunnahSpan.text.contains('\u200D'), true);
     });
   });
+
+  group('TajweedTagParser Tests', () {
+    test('Should parse bracket tagging format correctly', () {
+      final spans = TajweedTagParser.parse('بِرَبِّ [h:14[ٱ][l[ل][g[نّ][p[َا]سِ');
+      expect(spans.isNotEmpty, true);
+      final hasGhunnah = spans.any((s) => s.rule?.id == 'ghunnah');
+      expect(hasGhunnah, true);
+    });
+
+    test('Should parse SQLite HTML tagging format correctly', () {
+      final spans = TajweedTagParser.parse('بِسْمِ <tajweed class=ham_wasl>ٱ</tajweed>للَّهِ <tajweed class=ham_wasl>ٱ</tajweed><tajweed class=laam_shamsiyah>ل</tajweed>رَّحْمَ<tajweed class=madda_normal>ـٰ</tajweed>نِ <span class=end>١</span>');
+      expect(spans.isNotEmpty, true);
+      
+      final hasHamWasl = spans.any((s) => s.rule?.id == 'hamzat_wasl');
+      final hasLamShamsiyya = spans.any((s) => s.rule?.id == 'lam_shamsiyya');
+      final hasMaddNatural = spans.any((s) => s.rule?.id == 'madd_natural');
+      
+      expect(hasHamWasl, true);
+      expect(hasLamShamsiyya, true);
+      expect(hasMaddNatural, true);
+      
+      // The end span "<span class=end>١</span>" should be completely stripped
+      final containsEndSpan = spans.any((s) => s.text.contains('<span') || s.text.contains('١'));
+      expect(containsEndSpan, false);
+    });
+  });
 }
+

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/premium_provider.dart';
@@ -17,6 +18,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     with TickerProviderStateMixin {
   String _selectedPlanId = 'yearly';
   final ScrollController _scrollController = ScrollController();
+  bool _isRestoring = false;
 
   late AnimationController _entranceController;
   late AnimationController _bgController;
@@ -223,7 +225,31 @@ class _PaywallScreenState extends State<PaywallScreen>
                               ElevatedButton(
                                 onPressed: premium.isLoading 
                                     ? null 
-                                    : () => premium.purchasePlan(_selectedPlanId),
+                                    : () async {
+                                        try {
+                                          await premium.purchasePlan(_selectedPlanId);
+                                        } on PlatformException catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Purchase failed: ${e.message ?? e.toString()}'),
+                                                backgroundColor: AppTheme.qalqalahRed,
+                                                behavior: SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Purchase failed: $e'),
+                                                backgroundColor: AppTheme.qalqalahRed,
+                                                behavior: SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.premiumGold,
                                   foregroundColor: Colors.black,
@@ -281,10 +307,69 @@ class _PaywallScreenState extends State<PaywallScreen>
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          TextButton(
-                            onPressed: () => premium.restorePurchases(),
-                            child: const Text('Restore Purchases',
-                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                           TextButton(
+                            onPressed: (_isRestoring || premium.isLoading)
+                                ? null
+                                : () async {
+                                    setState(() => _isRestoring = true);
+                                    try {
+                                      final restored = await premium.restorePurchases();
+                                      if (context.mounted) {
+                                        if (restored) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Purchases restored successfully!'),
+                                              backgroundColor: AppTheme.primaryGreen,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('No active subscriptions found to restore.'),
+                                              backgroundColor: AppTheme.qalqalahRed,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } on PlatformException catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Restore failed: ${e.message ?? e.toString()}'),
+                                            backgroundColor: AppTheme.qalqalahRed,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Restore failed: $e'),
+                                            backgroundColor: AppTheme.qalqalahRed,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    } finally {
+                                      if (context.mounted) {
+                                        setState(() => _isRestoring = false);
+                                      }
+                                    }
+                                  },
+                            child: _isRestoring
+                                ? const SizedBox(
+                                    height: 14,
+                                    width: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  )
+                                : const Text('Restore Purchases',
+                                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
                           ),
                           const Text(' • ', style: TextStyle(color: AppTheme.textHint)),
                           TextButton(

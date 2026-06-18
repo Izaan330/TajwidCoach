@@ -85,6 +85,30 @@ class QuranDatabaseHelper {
     });
   }
 
+  /// Fetch a single specific Ayah
+  Future<AyahModel?> getAyah(int surahNumber, int ayahNumber) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'ayats',
+      where: 'sura = ? AND aya = ?',
+      whereArgs: [surahNumber, ayahNumber],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return AyahModel(
+      surahNumber: maps[0]['sura'],
+      ayahNumber: maps[0]['aya'],
+      arabicText: maps[0]['text'],
+      indopakText: maps[0]['indopak_text'] ?? '',
+      translationText: maps[0]['translation'] ?? '',
+      pageNumber: maps[0]['page'] ?? 1,
+      globalNumber: maps[0]['global_number'] ?? 0,
+      tajweedText: maps[0]['tajweed_text'] ?? '',
+    );
+  }
+
+
   /// Fetch the first Ayah of a specific page
   Future<AyahModel?> getFirstAyahByPage(int pageNumber) async {
     final db = await database;
