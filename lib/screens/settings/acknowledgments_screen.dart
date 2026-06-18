@@ -163,7 +163,7 @@ class AcknowledgmentsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'If you are a rights holder for any content used in this app and believe it has been used inappropriately, please contact us at support@quranpro.ai. We respect all intellectual property and will promptly address your concerns.',
+            'If you are a rights holder for any content used in this app and believe it has been used inappropriately, please contact us at d.insuree@gmail.com. We respect all intellectual property and will promptly address your concerns.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,

@@ -51,7 +51,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             const SizedBox(height: 48),
             const Center(
               child: Text(
-                'For any questions, contact us at:\nsupport@quranpro.ai',
+                'For any questions, contact us at:\nd.insuree@gmail.com',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary),
               ),

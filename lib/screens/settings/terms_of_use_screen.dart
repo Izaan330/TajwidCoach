@@ -42,7 +42,7 @@ class TermsOfUseScreen extends StatelessWidget {
             ),
             _buildSection(
               '3. Notice and Takedown Policy (DMCA)',
-              'Quran Pro: Tajwid AI respects the intellectual property rights of others. We source Quranic recitations from public repositories (such as Islamic.Network and EveryAyah.com).\n\nIf you believe that any content in the app infringes upon your copyright, please submit a notice to our designated agent at support@quranpro.ai with the following information:\n\n• Identification of the copyrighted work claimed to have been infringed.\n• Identification of the material that is claimed to be infringing.\n• Your contact information (address, phone number, and email).\n• A statement that you have a good faith belief that use of the material is not authorized.\n• A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner.',
+              'Quran Pro: Tajwid AI respects the intellectual property rights of others. We source Quranic recitations from public repositories (such as Islamic.Network and EveryAyah.com).\n\nIf you believe that any content in the app infringes upon your copyright, please submit a notice to our designated agent at d.insuree@gmail.com with the following information:\n\n• Identification of the copyrighted work claimed to have been infringed.\n• Identification of the material that is claimed to be infringing.\n• Your contact information (address, phone number, and email).\n• A statement that you have a good faith belief that use of the material is not authorized.\n• A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner.',
             ),
             _buildSection(
               '4. Prohibited Conduct',
@@ -51,7 +51,7 @@ class TermsOfUseScreen extends StatelessWidget {
             const SizedBox(height: 48),
             const Center(
               child: Text(
-                'For legal inquiries, contact us at:\nsupport@quranpro.ai',
+                'For legal inquiries, contact us at:\nd.insuree@gmail.com',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary),
               ),
