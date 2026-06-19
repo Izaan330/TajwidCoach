@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account & Data - Tajwid Coach</title>
+    <meta name="description" content="Request the permanent deletion of your Tajwid Coach account and all associated personal data and recordings.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-green: #00C853;
+            --primary-green-dark: #00963E;
+            --primary-green-light: #69F0AE;
+            --accent-amber: #FFB300;
+            --bg-dark: #080E1A;
+            --bg-mid: #0D1628;
+            --bg-surface: rgba(20, 31, 53, 0.65);
+            --bg-elevated: rgba(26, 39, 68, 0.8);
+            --text-primary: #F0F4FF;
+            --text-secondary: #8FA3C8;
+            --text-hint: #4A5A7A;
+            --divider: rgba(30, 45, 74, 0.6);
+            --glass-border: rgba(130, 177, 255, 0.15);
+            --glow-color: rgba(0, 200, 83, 0.15);
+            --error-red: #FF5252;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glow-orb {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60vw;
+            height: 60vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--glow-color) 0%, rgba(8, 14, 26, 0) 70%);
+            z-index: -1;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 580px;
+            padding: 24px;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 24px;
+            color: #000;
+            box-shadow: 0 4px 20px rgba(0, 200, 83, 0.4);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .warning-box {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.25);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            color: #FFA4A4;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .warning-box svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            background: rgba(8, 14, 26, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 10px rgba(0, 200, 83, 0.15);
+            background: rgba(8, 14, 26, 0.7);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 10px;
+            margin-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .checkbox-group input {
+            margin-top: 4px;
+            accent-color: var(--primary-green);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            text-transform: none;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.4;
+            letter-spacing: 0;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .success-card {
+            text-align: center;
+            padding: 48px 32px;
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(0, 200, 83, 0.15);
+            border: 2px solid var(--primary-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: var(--primary-green);
+        }
+
+        .success-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            color: var(--primary-green);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--primary-green-light);
+            text-decoration: underline;
+        }
+
+        footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-hint);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-orb"></div>
+
+    <div class="container">
+        
+        <header>
+            <div class="logo-container">
+                <div class="logo-icon">T</div>
+                <h1>Tajwid Coach</h1>
+            </div>
+            <p class="subtitle">Online Account Deletion Portal</p>
+        </header>
+
+        <!-- SUCCESS CONTAINER -->
+        <div id="success-container" class="card success-card" style="display: none;">
+            <div class="success-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2 class="success-title">Request Received</h2>
+            <p>Your request for account and data deletion has been submitted successfully.</p>
+            <p style="margin-top: 8px; font-size: 0.9rem;">To ensure security, our team will review the request and delete all associated information (including your name, email, phone number, streak records, and audio recordings) within <strong>24 to 48 hours</strong>.</p>
+            <a href="/privacy-policy" class="back-link">&larr; Return to Privacy Policy</a>
+        </div>
+
+        <!-- FORM CONTAINER -->
+        <div id="form-container" class="card">
+            <div class="warning-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div>
+                    <strong>Permanent Action:</strong> Deleting your account will permanently erase your profile, practice history, lesson streaks, and recitation audio recordings. This cannot be undone.
+                </div>
+            </div>
+
+            <form action="/delete-account" method="POST">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g. John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="e.g. john@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number (Optional)</label>
+                    <input type="text" id="phone" name="phone" placeholder="e.g. +1 (555) 019-2834">
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">Reason for leaving (Optional)</label>
+                    <textarea id="reason" name="reason" rows="3" placeholder="Let us know how we can improve..."></textarea>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="confirm" name="confirm" required>
+                    <label for="confirm">I confirm that I want to delete my Tajwid Coach account and permanently delete all my progress, data, and audio recitations.</label>
+                </div>
+
+                <button type="submit" class="btn">Delete My Account & Data</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/privacy-policy" style="color: var(--text-hint); text-decoration: none; font-size: 0.85rem;">Cancel and Go Back</a>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Tajwid Coach. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>

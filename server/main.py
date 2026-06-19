@@ -5,6 +5,7 @@ import librosa
 import torch
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
@@ -710,6 +711,74 @@ async def analyze_recitation(
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@app.get("/privacy-policy", response_class=HTMLResponse)
+@app.get("/v1/privacy-policy", response_class=HTMLResponse)
+def get_privacy_policy():
+    filepath = os.path.join(os.path.dirname(__file__), "privacy_policy.html")
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load privacy policy: {str(e)}")
+
+
+@app.get("/delete-account", response_class=HTMLResponse)
+@app.get("/v1/delete-account", response_class=HTMLResponse)
+def get_delete_account():
+    filepath = os.path.join(os.path.dirname(__file__), "delete_account.html")
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load delete account page: {str(e)}")
+
+
+@app.post("/delete-account", response_class=HTMLResponse)
+@app.post("/v1/delete-account", response_class=HTMLResponse)
+def post_delete_account(
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: Optional[str] = Form(None),
+    reason: Optional[str] = Form(None),
+    confirm: bool = Form(...)
+):
+    import json
+    from datetime import datetime
+    
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "reason": reason,
+        "confirmed": confirm
+    }
+    
+    log_file = os.path.join(os.path.dirname(__file__), "delete_requests.json")
+    try:
+        requests = []
+        if os.path.exists(log_file):
+            with open(log_file, "r", encoding="utf-8") as f:
+                requests = json.load(f)
+        requests.append(log_entry)
+        with open(log_file, "w", encoding="utf-8") as f:
+            json.dump(requests, f, indent=2)
+    except Exception as e:
+        print(f"Error logging account deletion request: {e}")
+
+    filepath = os.path.join(os.path.dirname(__file__), "delete_account.html")
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        html_content = html_content.replace('id="form-container"', 'id="form-container" style="display: none;"')
+        html_content = html_content.replace('id="success-container" style="display: none;"', 'id="success-container"')
+        return HTMLResponse(content=html_content, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process delete account request: {str(e)}")
 
 
 @app.get("/health")
